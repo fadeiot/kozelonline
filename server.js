@@ -24,10 +24,17 @@ AI.LEVELS.hard.timeMs = 400;
 const rng = E.mulberry32((Date.now() ^ (Math.random() * 1e9)) >>> 0);
 
 // ---------- Сторінка гри ----------
-const INDEX = path.join(__dirname, 'public', 'index.html');
+// Сторінку шукаємо і в папці public, і поруч із server.js (якщо GitHub завантажив файли без папки)
+const INDEX_PATHS = [path.join(__dirname, 'public', 'index.html'), path.join(__dirname, 'index.html')];
 function serveIndex(res) {
-  fs.readFile(INDEX, 'utf8', (err, html) => {
-    if (err) { res.writeHead(500); res.end('index.html not found'); return; }
+  const file = INDEX_PATHS.find(f => fs.existsSync(f));
+  if (!file) {
+    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Не знайдено index.html. Завантажте його в репозиторій поруч із server.js.');
+    return;
+  }
+  fs.readFile(file, 'utf8', (err, html) => {
+    if (err) { res.writeHead(500); res.end('index.html read error'); return; }
     const cfg = `<script>window.KOZEL_ONLINE=${JSON.stringify({ bot: BOT_USERNAME, app: APP_NAME, guests: ALLOW_GUESTS })};</script>`;
     html = html.replace('<script', cfg + '\n<script');
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
