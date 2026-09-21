@@ -1,0 +1,1440 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Боярський козел</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --wood-1:#4a3222; --wood-2:#2b1d14; --wood-grain:rgba(255,220,170,.035);
+  --ink:#f1e6d0; --ink-muted:#b9a58a; --line:rgba(241,230,208,.14);
+  --face:#f6efdf; --face-edge:#d9cbae; --red:#b42318; --black:#1e1a17;
+  --brass:#d4a73a; --brass-ink:#2b1d14;
+  --back-1:#6b1f2a; --back-2:#521520;
+  --sheet:#241811; --btn:#3a281c;
+  --serif:'Playfair Display', Georgia, 'Times New Roman', serif;
+  --sans:'Rubik', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --wood-1:#c89a66; --wood-2:#9c6b3f; --wood-grain:rgba(60,30,10,.05);
+    --ink:#2a1a0f; --ink-muted:#5a3e27; --line:rgba(42,26,15,.18);
+    --sheet:#f3e7d2; --btn:#e2cba8; --brass-ink:#2a1a0f;
+  }
+}
+:root[data-theme="dark"]{
+  --wood-1:#4a3222; --wood-2:#2b1d14; --ink:#f1e6d0; --ink-muted:#b9a58a; --sheet:#241811; --btn:#3a281c;
+}
+:root[data-theme="light"]{
+  --wood-1:#c89a66; --wood-2:#9c6b3f; --wood-grain:rgba(60,30,10,.05);
+  --ink:#2a1a0f; --ink-muted:#5a3e27; --line:rgba(42,26,15,.18);
+  --sheet:#f3e7d2; --btn:#e2cba8; --brass-ink:#2a1a0f;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  font-family:var(--sans); color:var(--ink);
+  background:
+    repeating-linear-gradient(92deg, var(--wood-grain) 0 2px, transparent 2px 9px),
+    radial-gradient(120% 80% at 50% 45%, var(--wood-1), var(--wood-2));
+  background-color:var(--wood-2);
+  -webkit-tap-highlight-color:transparent; overflow:hidden;
+}
+#app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;padding:10px 12px 12px;gap:8px}
+button{font:inherit;color:inherit}
+
+.top{display:flex;align-items:center;gap:10px}
+.brand{font-family:var(--serif);font-weight:800;font-size:1.15rem;letter-spacing:.01em;flex:1;line-height:1}
+.brand small{display:block;font-family:var(--sans);font-weight:400;font-size:.72rem;color:var(--ink-muted);margin-top:3px;letter-spacing:0}
+.score{display:flex;gap:6px;align-items:stretch}
+.sc{display:flex;flex-direction:column;align-items:center;min-width:44px;padding:4px 8px;border:1px solid var(--line);border-radius:8px}
+.sc span{font-size:.68rem;color:var(--ink-muted)}
+.sc b{font-family:var(--serif);font-size:1.2rem;line-height:1.1}
+.mult{align-self:center;background:var(--brass);color:var(--brass-ink);font-weight:600;border-radius:6px;padding:3px 7px;font-size:.85rem}
+.icon{background:none;border:1px solid var(--line);border-radius:8px;width:38px;height:38px;font-size:1.1rem;cursor:pointer}
+
+.pilecount{font-size:.78rem;color:var(--ink-muted);line-height:1.35}
+.pilecount b{color:var(--ink);font-weight:600}
+.me-row{display:flex;justify-content:space-between;align-items:flex-end}
+
+.middle{flex:1;display:flex;align-items:center;gap:14px;min-height:0}
+.stock{position:relative;width:104px;height:118px;flex:none;--sw:min(15vw,64px)}
+.stock .card{position:absolute;--w:var(--sw)}
+.stock .trumpcard{left:calc(var(--sw)*.62);top:calc(var(--sw)*.22);transform:rotate(90deg)}
+.stock .deck{left:0;top:0}
+.stock .cnt{position:absolute;left:0;top:calc(var(--sw)*1.4 + 8px);width:104px;text-align:left;line-height:1.3;font-size:.78rem;color:var(--ink-muted)}
+.stock .suitonly{position:absolute;left:0;top:10px;width:60px;height:60px;border:1px dashed var(--line);border-radius:50%;display:grid;place-items:center;font-size:1.8rem}
+.table{flex:1;display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:10px 8px;min-height:130px}
+.slot .card{position:absolute;left:0;top:0}
+@keyframes land{from{transform:translateY(40px) rotate(0);opacity:0}to{transform:rotate(9deg);opacity:1}}
+
+.msg{min-height:2.8em;font-size:.92rem;line-height:1.4;text-align:center;padding:0 6px;text-wrap:balance}
+
+.hand{display:flex;justify-content:center;gap:6px}
+#myHand{min-height:calc(var(--cw)*1.4 + 14px);align-items:flex-end}
+
+/* Карта */
+.card{
+  --w:var(--cw);
+  width:var(--w);height:calc(var(--w)*1.4);border-radius:calc(var(--w)*.1);
+  background:var(--face);border:1px solid var(--face-edge);
+  box-shadow:0 2px 0 rgba(0,0,0,.18),0 6px 14px rgba(0,0,0,.28);
+  position:relative;color:var(--black);padding:0;flex:none;
+  font-family:var(--serif);user-select:none;
+}
+.card.red{color:var(--red)}
+.card .idx{position:absolute;left:7%;top:5%;display:flex;flex-direction:column;align-items:center;line-height:.95;font-weight:800;font-size:calc(var(--w)*.26)}
+.card .idx i{font-style:normal;font-size:.78em;font-family:var(--sans)}
+.card .idx.b{left:auto;top:auto;right:7%;bottom:5%;transform:rotate(180deg)}
+.card .pip{position:absolute;inset:0;display:grid;place-items:center;font-size:calc(var(--w)*.5);font-family:var(--sans)}
+.card.trump::after{content:"";position:absolute;inset:3px;border:1.5px solid var(--brass);border-radius:calc(var(--w)*.08);pointer-events:none}
+.card.back{
+  background:
+    repeating-linear-gradient(45deg, rgba(212,167,58,.28) 0 1.5px, transparent 1.5px 7px),
+    repeating-linear-gradient(-45deg, rgba(212,167,58,.28) 0 1.5px, transparent 1.5px 7px),
+    linear-gradient(var(--back-1),var(--back-2));
+  border:3px solid var(--face);
+}
+.card.sm{--w:44px}
+.card.tbl{--w:var(--cw-t)}
+button.card{cursor:pointer;transition:translate .235s cubic-bezier(.2,.8,.2,1),box-shadow .235s ease}
+button.card:focus-visible{outline:3px solid var(--brass);outline-offset:3px}
+button.card.sel{translate:0 -16px;box-shadow:0 0 0 3px var(--brass),0 10px 18px rgba(0,0,0,.35)}
+button.card:disabled{cursor:default}
+#app{--cw:min(21vw,96px);--cw-t:min(15vw,70px)}
+
+.actions{display:flex;gap:8px;min-height:50px}
+.btn{flex:1;min-height:50px;border-radius:10px;border:1px solid var(--line);background:var(--btn);font-weight:600;font-size:.98rem;cursor:pointer;padding:0 10px}
+.btn.primary{background:var(--brass);color:var(--brass-ink);border-color:transparent}
+.btn:disabled{opacity:.38;cursor:default}
+.btn:focus-visible,.icon:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+
+/* Аркуш */
+.sheet{position:fixed;inset:0;background:rgba(10,6,4,.6);display:flex;align-items:flex-end;justify-content:center;z-index:10;padding:0 0 env(safe-area-inset-bottom,0px)}
+.sheet[hidden]{display:none}
+.sheet-card{background:var(--sheet);color:var(--ink);width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:22px 20px 20px;max-height:88vh;overflow:auto}
+.sheet h2{font-family:var(--serif);font-weight:800;font-size:1.6rem;margin:0 0 6px;line-height:1.15}
+.sheet p{margin:.4em 0;line-height:1.5;color:var(--ink-muted)}
+.sheet .big{font-family:var(--serif);font-size:2.6rem;font-weight:800;text-align:center;margin:10px 0 2px;color:var(--ink)}
+.sheet .big span{font-size:1rem;font-family:var(--sans);font-weight:400;color:var(--ink-muted);margin:0 10px}
+.sheet .stack{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.sheet .row{display:flex;gap:8px}
+.rules{font-size:.9rem;line-height:1.55;color:var(--ink-muted)}
+.rules h3{font-family:var(--serif);color:var(--ink);font-size:1.05rem;margin:14px 0 4px}
+.rules ul{padding-left:1.1em;margin:4px 0}
+.levels .btn[aria-pressed="true"]{outline:2px solid var(--brass)}
+.tally{display:flex;justify-content:space-around;margin-top:10px;text-align:center}
+.tally div{font-size:.8rem;color:var(--ink-muted)}
+.tally b{display:block;font-family:var(--serif);font-size:1.6rem;color:var(--ink)}
+@media (max-height:640px){#app{--cw:min(18vw,80px);--cw-t:min(13vw,58px)} .opp{min-height:64px}}
+
+.opp{display:flex;justify-content:space-between;align-items:flex-start;min-height:84px;gap:10px}
+.seat{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.seat.right{align-items:flex-end}
+.seat .nm{font-size:.82rem;color:var(--ink-muted)}
+.seat.active .nm{color:var(--brass);font-weight:600}
+.seat .hand .card{margin-left:-14px}.seat .hand .card:first-child{margin-left:0}
+.slot{position:relative;width:calc(var(--cw-t)*1.25);height:calc(var(--cw-t)*1.75)}
+.slot.deep{width:calc(var(--cw-t)*1.45);height:calc(var(--cw-t)*2)}
+.slot .card.l1{left:18%;top:20%;transform:rotate(9deg)}
+.slot .card.l2{left:34%;top:40%;transform:rotate(-7deg)}
+.slot.deeper{width:calc(var(--cw-t)*1.65);height:calc(var(--cw-t)*2.25)}
+.slot .card.l3{left:50%;top:58%;transform:rotate(5deg)}
+.seat.center{align-items:center}
+.opp.four .seat .hand .card{margin-left:-28px}
+.opp.four .seat .hand .card:first-child{margin-left:0}
+.seat .nm em{font-style:normal;opacity:.75}
+.slot .card.new{animation:drop .28s ease-out}
+@keyframes drop{from{opacity:0;translate:0 40px}to{opacity:1;translate:0 0}}
+@media (prefers-reduced-motion: reduce){.slot .card.new{animation:none}}
+.res{width:100%;border-collapse:collapse;margin-top:10px;font-size:.95rem}
+.res th{font-weight:400;color:var(--ink-muted);font-size:.78rem;text-align:right;padding:4px 6px}
+.res th:first-child,.res td:first-child{text-align:left}
+.res td{padding:7px 6px;text-align:right;border-top:1px solid var(--line)}
+.res td b{font-family:var(--serif);font-size:1.15rem}
+.places{margin:8px 0 0;padding-left:1.3em;line-height:1.7}
+.menu-lbl{font-size:.82rem;color:var(--ink-muted);margin:12px 0 -2px}
+
+/* ===== Пара на пару: розкладка хрестом ===== */
+.board4{flex:1;display:grid;grid-template-columns:72px 1fr 72px;grid-template-rows:auto 1fr;padding-bottom:8px;gap:4px;min-height:0;--c4:min(12vw,48px);--us:#7fb069;--them:#d0654f}
+.board4[hidden]{display:none}
+.seat4{display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+.seat4.top{grid-column:2;grid-row:1}
+.seat4.left{grid-column:1;grid-row:2;align-self:center}
+.seat4.right{grid-column:3;grid-row:2;align-self:center}
+.ava{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-weight:800;font-size:1.3rem;
+  background:rgba(0,0,0,.28);border:2.5px solid var(--them);position:relative;transition:box-shadow .2s}
+.seat4.mate .ava{border-color:var(--us)}
+.seat4.empty{visibility:hidden}
+.seat4.active .ava{box-shadow:0 0 0 4px var(--brass),0 0 18px rgba(212,167,58,.55)}
+.ava .cnt4{position:absolute;right:-6px;bottom:-4px;min-width:20px;height:20px;border-radius:10px;background:var(--back-1);color:#f6efdf;
+  font:600 .72rem var(--sans);display:grid;place-items:center;border:1.5px solid var(--face);padding:0 4px}
+.seat4 .nm4{font-size:.78rem;color:var(--ink-muted);line-height:1}
+.seat4.active .nm4{color:var(--brass);font-weight:600}
+.chip{font-size:.7rem;font-weight:600;padding:2px 7px;border-radius:9px;background:var(--ink);color:var(--wood-2);line-height:1.3;white-space:nowrap}
+.chip.win{background:var(--brass);color:var(--brass-ink)}
+.chip.hide{visibility:hidden}
+.cross{grid-column:2;grid-row:2;display:grid;grid-template-columns:1fr 14px 1fr;grid-template-rows:auto auto auto;align-content:center;gap:10px 6px;align-items:center;justify-items:center;min-height:0}
+.plays{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-content:center;min-height:calc(var(--c4)*1.4)}
+.plays.p2{grid-column:1/4;grid-row:1;align-self:end}
+.plays.p1{grid-column:1;grid-row:2;max-width:calc(var(--c4)*2 + 4px)}
+.plays.p3{grid-column:3;grid-row:2;max-width:calc(var(--c4)*2 + 4px)}
+.plays.p0{grid-column:1/4;grid-row:3;align-self:start}
+.plays .card{--w:var(--c4)}
+.plays .card .idx{font-size:calc(var(--w)*.3)}
+.plays.top .card:not(.back){box-shadow:0 0 0 2.5px var(--brass),0 4px 10px rgba(0,0,0,.35)}
+.plays .card.back{rotate:-6deg;opacity:.92}
+.center4{grid-column:1;grid-row:1;position:relative;width:72px;height:84px;align-self:start}
+.center4 .card{position:absolute;--w:38px}
+.center4 .deck{left:2px;top:2px;box-shadow:2px 2px 0 var(--face-edge),4px 4px 0 rgba(0,0,0,.25)}
+.center4 .trumpcard{left:24px;top:10px;transform:rotate(90deg)}
+.center4 .lbl{position:absolute;left:0;right:0;top:60px;text-align:center;font-size:.68rem;color:var(--ink-muted);line-height:1.2}
+.center4 .suitonly{position:absolute;left:8px;top:2px;width:52px;height:52px;border:1px dashed var(--line);border-radius:50%;display:grid;place-items:center;font-size:1.7rem}
+.sc.us{border-color:var(--us, #7fb069)}.sc.them{border-color:var(--them, #d0654f)}
+body.m4 .opp, body.m4 .middle, body.m4 .msg, body.m4 .me-row{display:none}
+body.m4 #app{--cw:min(22vw,100px)}
+
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);transform:translateX(-50%);z-index:20;background:var(--ink);color:var(--wood-2);
+  padding:10px 16px;border-radius:10px;font-size:.9rem;font-weight:500;max-width:88vw;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.35)}
+.toast[hidden]{display:none}
+.seats{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.seatrow{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;min-height:48px}
+.seatrow.me{border-color:var(--brass)}
+.seatrow .no{font-size:.75rem;color:var(--ink-muted);width:74px;flex:none;line-height:1.25}
+.seatrow .who{flex:1;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seatrow .who i{font-style:normal;color:var(--ink-muted);font-weight:400}
+.mini{border:1px solid var(--line);background:var(--btn);border-radius:8px;padding:7px 10px;font-size:.85rem;font-weight:600;cursor:pointer;min-height:36px}
+.mini:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+.joinrow{display:flex;gap:8px}
+.joinrow input{flex:1;min-width:0;min-height:50px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.15);color:var(--ink);
+  font:600 1.1rem var(--sans);letter-spacing:.2em;text-transform:uppercase;padding:0 12px}
+.joinrow .btn{flex:none;width:auto;padding:0 18px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand">Боярський козел<small id="levelLbl"></small></div>
+    <div class="score" id="score" aria-label="Очки"></div>
+    <div class="mult" id="mult" hidden>×2</div>
+    <button class="icon" id="menuBtn" aria-label="Меню">☰</button>
+  </header>
+  <section class="opp" id="opp"></section>
+  <section class="middle">
+    <div class="stock" id="stock"></div>
+    <div class="table" id="table" aria-live="polite"></div>
+  </section>
+  <section class="board4" id="board4" hidden>
+    <div class="center4" id="center4"></div>
+    <div class="seat4 top" id="seatT"></div>
+    <div class="seat4 left" id="seatL"></div>
+    <div class="seat4 right" id="seatR"></div>
+    <div class="cross" id="cross">
+      <div class="plays p2" id="playsT"></div>
+      <div class="plays p1" id="playsL"></div>
+      <div class="plays p3" id="playsR"></div>
+      <div class="plays p0" id="playsB"></div>
+    </div>
+  </section>
+  <div class="msg" id="msg" role="status"></div>
+  <div class="me-row"><div></div><div class="pilecount" id="trumpInfo"></div></div>
+  <section class="hand" id="myHand" aria-label="Ваші карти"></section>
+  <div class="actions" id="actions"></div>
+</div>
+<div class="sheet" id="sheet" hidden><div class="sheet-card" id="sheetBody"></div></div>
+<div class="toast" id="toast" role="alert" hidden></div>
+<script>
+// ===== Боярський козел: рушій гри (2 або 3 гравці) =====
+// Карта = число 0..35: масть = c/9|0, ранг = c%9
+// Порядок старшинства (ранг 0..8): 6 7 8 9 В Д К 10 Т
+const SUIT_SYM = ['♠', '♣', '♥', '♦'];
+const SUIT_NAME = ['піки', 'трефи', 'чирва', 'бубни'];
+const RANK_LABEL = ['6', '7', '8', '9', 'В', 'Д', 'К', '10', 'Т'];
+const PTS = [0, 0, 0, 0, 2, 3, 4, 10, 11];
+const suitOf = c => (c / 9) | 0;
+const rankOf = c => c % 9;
+const ptsOf = c => PTS[c % 9];
+const cardLabel = c => RANK_LABEL[rankOf(c)] + SUIT_SYM[suitOf(c)];
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle(arr, rng) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
+
+function beats(d, a, trump) {
+  const sd = suitOf(d), sa = suitOf(a);
+  if (sd === sa) return rankOf(d) > rankOf(a);
+  return sd === trump;
+}
+// Пари: res[i] — карта, що б'є att[i]; null, якщо так побити не можна
+function matchCover(att, def, trump) {
+  if (att.length !== def.length) return null;
+  const used = new Array(def.length).fill(false), res = [];
+  const rec = i => {
+    if (i === att.length) return true;
+    for (let j = 0; j < def.length; j++) {
+      if (!used[j] && beats(def[j], att[i], trump)) {
+        used[j] = true; res[i] = def[j];
+        if (rec(i + 1)) return true;
+        used[j] = false;
+      }
+    }
+    return false;
+  };
+  return rec(0) ? res : null;
+}
+const canCover = (att, def, trump) => matchCover(att, def, trump) !== null;
+function isUniform(cards) {
+  if (cards.length <= 1) return true;
+  const s = suitOf(cards[0]), r = rankOf(cards[0]);
+  return cards.every(c => suitOf(c) === s) || cards.every(c => rankOf(c) === r);
+}
+function isCombo(hand) { return hand.length === 4 && isUniform(hand); }
+function subsets(arr) {
+  const out = [], n = arr.length;
+  for (let m = 1; m < (1 << n); m++) {
+    const s = [];
+    for (let i = 0; i < n; i++) if (m & (1 << i)) s.push(arr[i]);
+    out.push(s);
+  }
+  return out;
+}
+function subsetsOfSize(arr, k) { return subsets(arr).filter(s => s.length === k); }
+
+// Пара на пару: команди 0-2 та 1-3
+const teamOf = (n, p) => n === 4 ? p % 2 : p;
+const teamCount = n => n === 4 ? 2 : n;
+
+// Захисники по черзі (за годинниковою стрілкою від атакуючого)
+function defendersFrom(n, p) { const r = []; for (let i = 1; i < n; i++) r.push((p + i) % n); return r; }
+
+// ---------- Роздача ----------
+function newDeal(rng, n, firstDeal, starter) {
+  const deck = shuffle([...Array(36).keys()], rng);
+  const hands = Array.from({ length: n }, () => []);
+  for (let r = 0; r < 4; r++) for (let p = 0; p < n; p++) hands[p].push(deck.pop());
+  const stock = deck; // stock[0] — верх, stock[last] — козир, що світить
+  let trumpCard = stock[stock.length - 1], trump = suitOf(trumpCard), trumpChanges = 0;
+  let attacker = starter;
+  if (firstDeal) {
+    for (;;) {
+      let best = null, bestP = -1;
+      for (let p = 0; p < n; p++) for (const c of hands[p])
+        if (suitOf(c) === trump && (best === null || rankOf(c) < rankOf(best))) { best = c; bestP = p; }
+      if (bestP >= 0) { attacker = bestP; break; }
+      shuffle(stock, rng);
+      trumpCard = stock[stock.length - 1]; trump = suitOf(trumpCard); trumpChanges++;
+    }
+  }
+  return {
+    n, trump, trumpCard, stock, hands,
+    piles: Array.from({ length: n }, () => []), // {c, hidden, by}
+    attacker, phase: 'attack', table: null, lastTrick: null, trumpHolder: null,
+    known: Array.from({ length: n }, () => new Map()),     // карта -> власник (у чужій руці), відомо гравцю p
+    knownHidden: Array.from({ length: n }, () => new Set()), // закриті карти, які p знає
+    trumpChanges,
+  };
+}
+
+function cloneTable(t) {
+  if (!t) return null;
+  return {
+    attack: t.attack.slice(), by: t.by, top: t.top.slice(), topBy: t.topBy,
+    layers: t.layers.map(l => ({ p: l.p, type: l.type, cards: l.cards.slice() })),
+    queue: t.queue.slice(), interceptQueue: t.interceptQueue.slice(),
+    intercepted: t.intercepted, attackerWasCombo: t.attackerWasCombo,
+  };
+}
+function cloneState(s) {
+  return {
+    n: s.n, trump: s.trump, trumpCard: s.trumpCard, stock: s.stock.slice(),
+    hands: s.hands.map(h => h.slice()),
+    piles: s.piles.map(pl => pl.map(e => ({ c: e.c, hidden: e.hidden, by: e.by }))),
+    attacker: s.attacker, phase: s.phase, table: cloneTable(s.table),
+    lastTrick: s.lastTrick, trumpHolder: s.trumpHolder,
+    known: s.known.map(m => new Map(m)), knownHidden: s.knownHidden.map(x => new Set(x)),
+    trumpChanges: s.trumpChanges,
+  };
+}
+
+function toAct(s) {
+  if (s.phase === 'attack') return s.attacker;
+  if (s.phase === 'intercept') return s.table.interceptQueue[0];
+  if (s.phase === 'defend') return s.table.queue[0];
+  return -1; // 'resolve' або 'dealEnd'
+}
+
+// У грі на двох перехоплення — одна з дій захисника
+function canIntercept(s) {
+  if (s.n !== 2 || s.phase !== 'defend' || s.table.intercepted || s.table.attackerWasCombo) return false;
+  if (s.table.layers.length) return false;
+  return isCombo(s.hands[toAct(s)]);
+}
+
+function legalActions(s) {
+  const p = toAct(s);
+  if (p < 0) return [];
+  const hand = s.hands[p];
+  const acts = [];
+  if (s.phase === 'attack') {
+    for (const sub of subsets(hand)) if (isUniform(sub)) acts.push({ type: 'attack', cards: sub });
+    return acts;
+  }
+  if (s.phase === 'intercept') return [{ type: 'intercept' }, { type: 'pass' }];
+  const top = s.table.top;
+  if (canIntercept(s)) acts.push({ type: 'intercept' });
+  const subs = subsetsOfSize(hand, top.length);
+  for (const sub of subs) if (canCover(top, sub, s.trump)) acts.push({ type: 'cover', cards: sub });
+  for (const sub of subs) acts.push({ type: 'discard', cards: sub });
+  return acts;
+}
+
+function removeCards(hand, cards) {
+  for (const c of cards) {
+    const i = hand.indexOf(c);
+    if (i < 0) throw new Error('Карти ' + cardLabel(c) + ' немає в руці');
+    hand.splice(i, 1);
+  }
+}
+function forgetPlayed(s, cards) { for (const m of s.known) for (const c of cards) m.delete(c); }
+
+function startDefense(s) {
+  const t = s.table;
+  t.queue = defendersFrom(s.n, t.by);
+  s.phase = 'defend';
+}
+
+function applyAction(s, a) {
+  const p = toAct(s);
+  if (p < 0) throw new Error('Зараз ніхто не ходить');
+  if (a.type === 'attack') {
+    if (s.phase !== 'attack') throw new Error('Зараз не атака');
+    if (!a.cards.length || !isUniform(a.cards)) throw new Error('Неприпустимий хід');
+    const wasCombo = isCombo(s.hands[p]);
+    removeCards(s.hands[p], a.cards);
+    forgetPlayed(s, a.cards);
+    s.table = { attack: a.cards.slice(), by: p, top: a.cards.slice(), topBy: null, layers: [],
+      queue: [], interceptQueue: [], intercepted: false, attackerWasCombo: wasCombo };
+    if (s.n > 2 && !wasCombo) {
+      const elig = defendersFrom(s.n, p).filter(q => isCombo(s.hands[q]));
+      if (elig.length) { s.table.interceptQueue = elig; s.phase = 'intercept'; return; }
+    }
+    startDefense(s);
+    return;
+  }
+  if (a.type === 'pass') {
+    if (s.phase !== 'intercept') throw new Error('Нема чого пропускати');
+    s.table.interceptQueue.shift();
+    if (!s.table.interceptQueue.length) startDefense(s);
+    return;
+  }
+  if (a.type === 'intercept') {
+    if (!(s.phase === 'intercept' || canIntercept(s))) throw new Error('Перехоплення неможливе');
+    const t = s.table, back = t.attack;
+    s.hands[t.by].push(...back);
+    for (let q = 0; q < s.n; q++) if (q !== t.by) for (const c of back) s.known[q].set(c, t.by);
+    const combo = s.hands[p].slice();
+    s.hands[p] = [];
+    forgetPlayed(s, combo);
+    s.table = { attack: combo, by: p, top: combo.slice(), topBy: null, layers: [],
+      queue: [], interceptQueue: [], intercepted: true, attackerWasCombo: true, returned: back.slice(), returnedTo: t.by };
+    s.attacker = p;
+    startDefense(s);
+    return;
+  }
+  if (s.phase !== 'defend') throw new Error('Зараз не захист');
+  const t = s.table;
+  if (a.cards.length !== t.top.length) throw new Error('Потрібно ' + t.top.length + ' карт');
+  if (a.type === 'cover') {
+    const m = matchCover(t.top, a.cards, s.trump);
+    if (!m) throw new Error('Цими картами не побити');
+    removeCards(s.hands[p], a.cards);
+    forgetPlayed(s, a.cards);
+    t.layers.push({ p, type: 'cover', cards: m });
+    t.top = m; t.topBy = p;
+  } else if (a.type === 'discard') {
+    removeCards(s.hands[p], a.cards);
+    for (let q = 0; q < s.n; q++) for (const c of a.cards)
+      if (s.known[q].has(c)) { s.known[q].delete(c); s.knownHidden[q].add(c); }
+    t.layers.push({ p, type: 'discard', cards: a.cards.slice() });
+  } else throw new Error('Невідома дія');
+  t.queue.shift();
+  if (!t.queue.length) s.phase = 'resolve';
+}
+
+// Хто забирає взятку, що лежить на столі
+function trickWinner(s) { const t = s.table; return t.topBy === null ? t.by : t.topBy; }
+
+function finishTrick(s) {
+  if (s.phase !== 'resolve') throw new Error('Взятка ще не зіграна');
+  const t = s.table, w = trickWinner(s);
+  for (const c of t.attack) s.piles[w].push({ c, hidden: false, by: t.by });
+  for (const l of t.layers) for (const c of l.cards) s.piles[w].push({ c, hidden: l.type === 'discard', by: l.p });
+  s.table = null; s.lastTrick = w; s.attacker = w;
+  // добір: першим той, хто взяв взятку, далі за годинниковою стрілкою
+  let q = w;
+  while (s.stock.length && s.hands.some(h => h.length < 4)) {
+    if (s.hands[q].length < 4) {
+      const c = s.stock.shift();
+      s.hands[q].push(c);
+      if (c === s.trumpCard) { s.trumpHolder = q; for (let o = 0; o < s.n; o++) if (o !== q) s.known[o].set(c, q); }
+    }
+    q = (q + 1) % s.n;
+  }
+  s.phase = (!s.stock.length && s.hands.every(h => !h.length)) ? 'dealEnd' : 'attack';
+  return w;
+}
+
+function pilePoints(s, p) { return s.piles[p].reduce((t, e) => t + ptsOf(e.c), 0); }
+const penaltyFor = pts => pts === 0 ? 4 : pts <= 30 ? 2 : 1;
+
+// Результат роздачі. pens[i] — штрафні очки гравця i за цю роздачу
+function dealResult(s, mult) {
+  const n = s.n, pts = s.piles.map((_, i) => pilePoints(s, i));
+  const pens = new Array(n).fill(0);
+  if (n === 2 || n === 4) {
+    // на двох — гравці, пара на пару — команди; правила однакові
+    const tp = n === 2 ? pts.slice() : [pts[0] + pts[2], pts[1] + pts[3]];
+    const tpens = [0, 0];
+    if (tp[0] === 60) return { pts, teamPts: tp, eggs: true, pens: tpens, winners: [], bases: [0, 0] };
+    const loser = tp[0] < tp[1] ? 0 : 1;
+    const bases = [0, 0]; bases[loser] = penaltyFor(tp[loser]);
+    tpens[loser] = bases[loser] * mult;
+    return { pts, teamPts: tp, eggs: false, pens: tpens, bases, winners: [1 - loser], loser, penalty: tpens[loser], base: bases[loser] };
+  }
+  // На трьох: перемагає найбільша сума (нічия за перше — обидва без штрафу), решта за шкалою
+  const max = Math.max(...pts);
+  const bases = pts.map(x => x === max ? 0 : penaltyFor(x));
+  for (let i = 0; i < n; i++) pens[i] = bases[i] * mult;
+  return { pts, eggs: false, pens, bases, winners: pts.map((x, i) => x === max ? i : -1).filter(i => i >= 0) };
+}
+
+// ---------- Серія ----------
+function newSeries(n) {
+  return { n, penalties: new Array(teamCount(n)).fill(0), mult: 1, dealNo: 0, nextStarter: null,
+    over: false, loser: -1, losers: [], milk: false, deals: [] };
+}
+function applyDealToSeries(ser, res, lastTrick) {
+  ser.dealNo++;
+  ser.nextStarter = lastTrick;
+  const rec = { pts: res.pts, eggs: res.eggs, mult: ser.mult, pens: res.pens.slice(), bases: res.bases };
+  ser.deals.push(rec);
+  if (res.eggs) { ser.mult *= 2; return rec; }
+  for (let i = 0; i < ser.penalties.length; i++) ser.penalties[i] += res.pens[i];
+  ser.mult = 1;
+  const P = ser.penalties, max = Math.max(...P), min = Math.min(...P);
+  const withMax = P.map((x, i) => x === max ? i : -1).filter(i => i >= 0);
+  if (ser.n === 2 || ser.n === 4) {
+    if ((P[0] === 6 && P[1] === 0) || (P[1] === 6 && P[0] === 0)) { ser.over = true; ser.milk = true; }
+    else if (max >= 12) ser.over = true;
+  } else {
+    if (max >= 6 && min === 0) { ser.over = true; ser.milk = true; }
+    else if (max >= 12) ser.over = true;
+  }
+  if (ser.over) { ser.losers = withMax; ser.loser = withMax[0]; }
+  return rec;
+}
+
+const Engine = {
+  SUIT_SYM, SUIT_NAME, RANK_LABEL, PTS, suitOf, rankOf, ptsOf, cardLabel,
+  mulberry32, shuffle, beats, canCover, matchCover, isUniform, isCombo, subsets, subsetsOfSize,
+  defendersFrom, teamOf, teamCount, newDeal, cloneState, toAct, legalActions, canIntercept, applyAction, trickWinner,
+  finishTrick, pilePoints, penaltyFor, dealResult, newSeries, applyDealToSeries,
+};
+if (typeof module !== 'undefined') module.exports = Engine;
+
+</script>
+<script>
+// ===== Боярський козел: штучний суперник (2 або 3 гравці) =====
+// Легкий: евристика з шумом. Середній/Сильний: Монте-Карло з детермінізацією —
+// бот "вгадує" приховані карти лише з того, що бачив сам, і розігрує варіанти до кінця роздачі.
+const E = (typeof module !== 'undefined') ? require('./engine2.js') : Engine;
+
+const trumpStrength = (c, trump) => E.suitOf(c) === trump ? 10 + E.rankOf(c) : 0;
+const keepValue = (c, trump) => E.ptsOf(c) + trumpStrength(c, trump) * 0.9 + E.rankOf(c) * 0.25;
+
+function heuristicAction(s, rng, noise) {
+  const acts = E.legalActions(s);
+  const trump = s.trump;
+  if (s.phase === 'attack') {
+    let best = null, bs = -1e9;
+    const endgame = s.stock.length === 0;
+    for (const a of acts) {
+      const n = a.cards.length;
+      const pts = a.cards.reduce((t, c) => t + E.ptsOf(c), 0);
+      const tr = a.cards.filter(c => E.suitOf(c) === trump).length;
+      let sc = n * 2.2 - pts * 0.55 - tr * 7 - a.cards.reduce((t, c) => t + E.rankOf(c), 0) * 0.3;
+      if (endgame) sc += a.cards.filter(c => E.rankOf(c) === 8 || (E.suitOf(c) === trump && E.rankOf(c) >= 6)).length * 6;
+      sc += (rng() - 0.5) * noise;
+      if (sc > bs) { bs = sc; best = a; }
+    }
+    return best;
+  }
+  const me = E.toAct(s), t = s.table;
+  const mate = q => s.n === 4 && q !== me && q % 2 === me % 2;
+  if (s.phase === 'intercept') return mate(t.by) ? acts[1] : (rng() < 0.97 ? acts[0] : acts[1]);
+  const inter = acts.find(a => a.type === 'intercept');
+  if (inter && rng() > noise * 0.02) return inter;
+  const owner = t.topBy === null ? t.by : t.topBy;
+  if (mate(owner)) {
+    // старші карти в партнера: не перебиваємо; якщо суперників після мене нема — "підмазуємо" дорогими
+    const oppAfter = t.queue.slice(1).some(q => q % 2 !== me % 2);
+    let best = null, bv = -1e9;
+    for (const a of acts) if (a.type === 'discard') {
+      const pts = a.cards.reduce((x, c) => x + E.ptsOf(c), 0);
+      const keep = a.cards.reduce((x, c) => x + trumpStrength(c, trump) * 0.9 + E.rankOf(c) * 0.25, 0);
+      const v = (oppAfter ? -pts * 0.6 : pts * 1.0) - keep + (rng() - 0.5) * noise;
+      if (v > bv) { bv = v; best = a; }
+    }
+    if (best) return best;
+  }
+  let tablePts = t.attack.reduce((x, c) => x + E.ptsOf(c), 0);
+  for (const l of t.layers) if (l.type === 'cover') tablePts += l.cards.reduce((x, c) => x + E.ptsOf(c), 0);
+  const laterDefenders = t.queue.length - 1; // хто ще битиме після мене
+  let bestCover = null, bc = 1e9, bestDisc = null, bd = 1e9;
+  for (const a of acts) {
+    if (a.type === 'cover') {
+      const cost = a.cards.reduce((x, c) => x + trumpStrength(c, trump) * 0.8 + E.rankOf(c) * 0.2, 0);
+      if (cost < bc) { bc = cost; bestCover = a; }
+    } else if (a.type === 'discard') {
+      const cost = a.cards.reduce((x, c) => x + keepValue(c, trump), 0);
+      if (cost < bd) { bd = cost; bestDisc = a; }
+    }
+  }
+  const discPts = bestDisc ? bestDisc.cards.reduce((x, c) => x + E.ptsOf(c), 0) : 0;
+  if (bestCover) {
+    let gain = tablePts * 2 + discPts * 2 + bestCover.cards.reduce((x, c) => x + E.ptsOf(c), 0);
+    if (laterDefenders > 0) gain *= 0.7; // мене ще можуть перебити
+    if (gain + 4 + (rng() - 0.5) * noise > bc) return bestCover;
+  }
+  return bestDisc;
+}
+
+// Випадковий розклад прихованих карт, сумісний з тим, що знає гравець p
+function determinize(s, p, rng) {
+  const d = E.cloneState(s);
+  const excluded = new Set(s.hands[p]);
+  for (const pile of s.piles) for (const e of pile) if (!e.hidden || e.by === p) excluded.add(e.c);
+  if (s.table) {
+    for (const c of s.table.attack) excluded.add(c);
+    for (const l of s.table.layers) if (l.type === 'cover' || l.p === p) for (const c of l.cards) excluded.add(c);
+  }
+  for (const c of s.knownHidden[p]) excluded.add(c);
+  const knownIn = Array.from({ length: s.n }, () => []);
+  for (const [c, owner] of s.known[p]) if (s.hands[owner].includes(c)) { knownIn[owner].push(c); excluded.add(c); }
+  const trumpInStock = s.stock.length > 0 && s.stock[s.stock.length - 1] === s.trumpCard;
+  if (trumpInStock) excluded.add(s.trumpCard);
+
+  const pool = [];
+  for (let c = 0; c < 36; c++) if (!excluded.has(c)) pool.push(c);
+  E.shuffle(pool, rng);
+  let k = 0;
+  for (let q = 0; q < s.n; q++) {
+    if (q === p) continue;
+    const h = knownIn[q].slice();
+    while (h.length < s.hands[q].length) h.push(pool[k++]);
+    d.hands[q] = h;
+  }
+  const stock = [];
+  const free = trumpInStock ? s.stock.length - 1 : s.stock.length;
+  for (let i = 0; i < free; i++) stock.push(pool[k++]);
+  if (trumpInStock) stock.push(s.trumpCard);
+  d.stock = stock;
+  const unknownHidden = c => !s.knownHidden[p].has(c);
+  for (const pile of d.piles) for (const e of pile)
+    if (e.hidden && e.by !== p && unknownHidden(e.c)) e.c = pool[k++];
+  if (d.table) for (const l of d.table.layers)
+    if (l.type === 'discard' && l.p !== p) l.cards = l.cards.map(c => unknownHidden(c) ? pool[k++] : c);
+  if (k !== pool.length) throw new Error('determinize: pool mismatch ' + k + ' vs ' + pool.length);
+  return d;
+}
+
+function utility(s, p) {
+  const r = E.dealResult(s, 1);
+  const n = s.n;
+  if (n === 4) {
+    const t = p % 2;
+    return -r.pens[t] + r.pens[1 - t] + (r.teamPts[t] - r.teamPts[1 - t]) * 0.004;
+  }
+  let others = 0, optsSum = 0;
+  for (let q = 0; q < n; q++) if (q !== p) { others += r.pens[q]; optsSum += r.pts[q]; }
+  const w = n === 2 ? 1 : 0.5;
+  return -r.pens[p] + w * others / (n - 1) + (r.pts[p] - optsSum / (n - 1)) * 0.004;
+}
+
+function rollout(s, rng, noise) {
+  let guard = 0;
+  while (s.phase !== 'dealEnd') {
+    if (s.phase === 'resolve') E.finishTrick(s);
+    else E.applyAction(s, heuristicAction(s, rng, noise));
+    if (++guard > 800) throw new Error('rollout loop');
+  }
+}
+
+const LEVELS = {
+  easy: { mc: 0, noise: 6 },
+  medium: { mc: 60, noise: 3 },
+  hard: { mc: 400, noise: 2, timeMs: 700 },
+};
+
+function chooseAction(s, level, rng) {
+  const cfg = LEVELS[level] || LEVELS.hard;
+  const acts = E.legalActions(s);
+  if (acts.length === 1) return acts[0];
+  if (!cfg.mc) return heuristicAction(s, rng, cfg.noise);
+  const p = E.toAct(s);
+  const sums = new Array(acts.length).fill(0);
+  const t0 = Date.now();
+  for (let it = 0; it < cfg.mc; it++) {
+    const det = determinize(s, p, rng);
+    const seed = (rng() * 4294967296) >>> 0;
+    for (let i = 0; i < acts.length; i++) {
+      const sim = E.cloneState(det);
+      E.applyAction(sim, acts[i]);
+      rollout(sim, E.mulberry32(seed), 1.5);
+      sums[i] += utility(sim, p);
+    }
+    if (cfg.timeMs && Date.now() - t0 > cfg.timeMs && it >= 60) break;
+  }
+  let bi = 0;
+  for (let i = 1; i < acts.length; i++) if (sums[i] > sums[bi]) bi = i;
+  return acts[bi];
+}
+
+const AI = { heuristicAction, determinize, chooseAction, utility, LEVELS };
+if (typeof module !== 'undefined') module.exports = AI;
+
+</script>
+<script>
+const $ = id => document.getElementById(id);
+const L = Engine;
+const LEVEL_NAME = { easy: 'Легкий', medium: 'Середній', hard: 'Сильний' };
+const G = { mode: 2, level: 'hard', ser: null, deal: null,
+  rng: L.mulberry32((Date.now() ^ (Math.random() * 1e9)) >>> 0),
+  sel: new Set(), busy: false, pending: '', notes: [], prompt: '', started: false, timer: null, chips: {}, fly: -1,
+  net: { ws: null, me: null, room: null, names: null, lastSeq: -1, shown: null, join: null, retry: 0, queue: [], sent: false } };
+try {
+  const lv = localStorage.getItem('kozel-level'); if (LEVEL_NAME[lv]) G.level = lv;
+  const md = +localStorage.getItem('kozel-mode'); if (md >= 2 && md <= 4) G.mode = md;
+} catch (e) {}
+
+const NAMES = { 2: [null, { nom: 'Бот', gen: 'бота' }], 3: [null, { nom: 'Кум', gen: 'Кума' }, { nom: 'Сват', gen: 'Свата' }],
+  4: [null, { nom: 'Кум', gen: 'Кума' }, { nom: 'Брат', gen: 'Брата' }, { nom: 'Сват', gen: 'Свата' }] };
+const MODE_NAME = { 2: 'На двох', 3: 'На трьох', 4: 'Пара на пару' };
+const isMate = p => n_() === 4 && p === 2;
+const n_ = () => G.deal ? G.deal.n : G.mode;
+const nm = p => p === 0 ? 'Ви' : (G.net.room ? G.net.names[p] : NAMES[n_()][p].nom);
+const gen = p => G.net.room ? nm(p) : NAMES[n_()][p].gen;
+const esc = t => String(t).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+function plural(n, one, few, many) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+}
+const cardsWord = n => n + ' ' + plural(n, 'карту', 'карти', 'карт');
+const labels = cs => cs.map(L.cardLabel).join(' ');
+function sortHand(h, trump) {
+  return h.slice().sort((a, b) => {
+    const ta = L.suitOf(a) === trump, tb = L.suitOf(b) === trump;
+    if (ta !== tb) return ta ? 1 : -1;
+    if (L.suitOf(a) !== L.suitOf(b)) return L.suitOf(a) - L.suitOf(b);
+    return L.rankOf(a) - L.rankOf(b);
+  });
+}
+// Колода без точного числа
+function stockWord(k, n) {
+  const f = k / (36 - 4 * n);
+  if (k === 0) return 'ніц';
+  if (f > 0.72) return 'майже повна';
+  if (f >= 0.5) return 'половина';
+  if (f >= 0.2) return 'менше половини';
+  return 'зовсім мало';
+}
+
+function cardEl(c, opts = {}) {
+  const el = document.createElement(opts.button ? 'button' : 'div');
+  el.className = 'card' + (opts.cls ? ' ' + opts.cls : '');
+  if (c === null || c === undefined) { el.className += ' back'; return el; }
+  const s = L.suitOf(c), r = L.RANK_LABEL[L.rankOf(c)], sym = L.SUIT_SYM[s];
+  if (s >= 2) el.className += ' red';
+  if (G.deal && s === G.deal.trump) el.className += ' trump';
+  el.innerHTML = `<span class="idx">${r}<i>${sym}</i></span><span class="pip">${sym}</span><span class="idx b">${r}<i>${sym}</i></span>`;
+  el.setAttribute('aria-label', r + ' ' + L.SUIT_NAME[s] + (G.deal && s === G.deal.trump ? ', козир' : ''));
+  return el;
+}
+
+// ---------- Рендер ----------
+function renderCore() {
+  const s = G.deal, ser = G.ser, n = n_();
+  const sc = $('score'); sc.innerHTML = '';
+  const chipNames = n === 4 ? ['Ми', 'Вони'] : [...Array(n).keys()].map(i => { const t = nm(i); return t.length > 7 ? t.slice(0, 6) + '…' : t; });
+  chipNames.forEach((t, i) => {
+    const d = document.createElement('div'); d.className = 'sc' + (n === 4 ? (i === 0 ? ' us' : ' them') : '');
+    d.innerHTML = `<span>${esc(t)}</span><b>${ser ? ser.penalties[i] : 0}</b>`;
+    sc.appendChild(d);
+  });
+  $('mult').hidden = !ser || ser.mult === 1;
+  $('mult').textContent = '×' + (ser ? ser.mult : 1);
+  $('levelLbl').textContent = G.net.room ? `${MODE_NAME[n]}, стіл ${G.net.room.code}` : (n === 2 ? 'Бот: ' : MODE_NAME[n] + ', боти: ') + LEVEL_NAME[G.level].toLowerCase();
+  $('msg').textContent = [G.pending, ...G.notes, G.prompt].filter(Boolean).join(' ');
+  document.body.classList.add('m4');
+  $('board4').hidden = false;
+  if (!s) return;
+  const actor = L.toAct(s);
+  renderBoard(s, actor);
+
+  const opp = $('opp'); opp.innerHTML = ''; opp.classList.toggle('four', n === 4);
+  for (let p = 1; p < n; p++) {
+    const seat = document.createElement('div');
+    const pos = p === n - 1 && n > 2 ? ' right' : (n === 4 && p === 2 ? ' center' : '');
+    seat.className = 'seat' + pos + (actor === p ? ' active' : '');
+    seat.innerHTML = `<div class="nm">${nm(p)}${isMate(p) ? ' <em>партнер</em>' : ''}${actor === p && G.busy ? ' думає…' : ''}</div>`;
+    const h = document.createElement('div'); h.className = 'hand';
+    for (let i = 0; i < s.hands[p].length; i++) h.appendChild(cardEl(null, { cls: 'sm' }));
+    seat.appendChild(h); opp.appendChild(seat);
+  }
+  $('trumpInfo').innerHTML = `Козир: <b>${L.SUIT_SYM[s.trump]} ${L.SUIT_NAME[s.trump]}</b>`;
+
+  const st = $('stock'); st.innerHTML = '';
+  if (s.stock.length) {
+    st.appendChild(cardEl(s.trumpCard, { cls: 'trumpcard' }));
+    if (s.stock.length > 1) st.appendChild(cardEl(null, { cls: 'deck' }));
+  } else {
+    const d = document.createElement('div'); d.className = 'suitonly';
+    d.style.color = s.trump >= 2 ? 'var(--red)' : 'var(--ink)';
+    d.textContent = L.SUIT_SYM[s.trump]; st.appendChild(d);
+  }
+  const cnt = document.createElement('div'); cnt.className = 'cnt';
+  cnt.innerHTML = 'колода<br>' + stockWord(s.stock.length, n);
+  st.appendChild(cnt);
+
+  const tb = $('table'); tb.innerHTML = '';
+  if (s.table) {
+    const t = s.table;
+    t.attack.forEach((c, i) => {
+      const slot = document.createElement('div');
+      slot.className = 'slot' + (t.layers.length > 2 ? ' deeper' : t.layers.length > 1 ? ' deep' : '');
+      slot.appendChild(cardEl(c, { cls: 'tbl' + (t.layers.length === 0 ? ' new' : '') }));
+      t.layers.forEach((l, j) => {
+        const cls = 'tbl l' + (j + 1) + (j === t.layers.length - 1 ? ' new' : '');
+        slot.appendChild(cardEl(l.type === 'cover' ? l.cards[i] : null, { cls }));
+      });
+      tb.appendChild(slot);
+    });
+  }
+
+  const mh = $('myHand'); mh.innerHTML = '';
+  const myTurn = !G.busy && actor === 0 && (s.phase === 'attack' || s.phase === 'defend');
+  for (const c of sortHand(s.hands[0], s.trump)) {
+    const el = cardEl(c, { button: true });
+    if (G.sel.has(c)) el.classList.add('sel');
+    el.setAttribute('aria-pressed', G.sel.has(c));
+    el.disabled = !myTurn;
+    el.dataset.c = 'c' + c;
+    el.onclick = () => {
+      if (G.sel.has(c)) G.sel.delete(c); else G.sel.add(c);
+      haptic.tap();
+      el.classList.toggle('sel', G.sel.has(c)); el.setAttribute('aria-pressed', G.sel.has(c));
+      renderActions(true);
+    };
+    mh.appendChild(el);
+  }
+  renderActions(actor === 0 && !G.busy);
+}
+
+// ---------- Стіл «хрестом» (усі режими) ----------
+// Місце кожного гравця: T — угорі, L — ліворуч, R — праворуч, B — ви внизу; fly — куди летить взятка
+const POS = {
+  2: [{ at: 'B', fly: 0 }, { at: 'T', fly: 2 }],
+  3: [{ at: 'B', fly: 0 }, { at: 'L', fly: 1 }, { at: 'R', fly: 3 }],
+  4: [{ at: 'B', fly: 0 }, { at: 'L', fly: 1 }, { at: 'T', fly: 2 }, { at: 'R', fly: 3 }],
+};
+const LETTER = { 'Бот': 'Б', 'Кум': 'К', 'Сват': 'С', 'Брат': 'Б' };
+function renderBoard(s, actor) {
+  const n = s.n, pos = POS[n];
+  for (const at of ['T', 'L', 'R']) {
+    const seat = $('seat' + at);
+    const p = pos.findIndex(x => x.at === at);
+    seat.className = 'seat4 ' + { T: 'top', L: 'left', R: 'right' }[at] + (p < 0 ? ' empty' : '') +
+      (p > 0 && isMate(p) ? ' mate' : '') + (p > 0 && actor === p ? ' active' : '');
+    if (p < 0) { seat.innerHTML = ''; continue; }
+    const chip = G.chips[p];
+    const nmp = esc(nm(p)), letter = LETTER[nm(p)] || esc((nm(p)[0] || '?').toUpperCase());
+    const off = G.net.room && G.net.room.online && !G.net.room.online[p];
+    const ch = off ? 'нема зв’язку' : chip;
+    seat.innerHTML = `<div class="ava" aria-label="${nmp}">${letter}<span class="cnt4">${s.hands[p].length}</span></div>` +
+      `<div class="nm4">${nmp.length > 12 ? nmp.slice(0, 11) + '…' : nmp}${isMate(p) ? ' (партнер)' : ''}</div><div class="chip${ch === 'взятка' ? ' win' : ''}${ch ? '' : ' hide'}">${ch || '·'}</div>`;
+  }
+  // зіграні карти лежать перед тим, хто їх поклав
+  const byP = Array.from({ length: n }, () => []);
+  const t = s.table;
+  if (t) {
+    byP[t.by] = t.attack.map(c => ({ c, back: false }));
+    for (const l of t.layers) byP[l.p] = l.cards.map(c => ({ c, back: l.type === 'discard' }));
+  }
+  const topOwner = t ? (t.topBy === null ? t.by : t.topBy) : -1;
+  const lastP = t ? (t.layers.length ? t.layers[t.layers.length - 1].p : t.by) : -1;
+  const cls = { B: 'p0', L: 'p1', T: 'p2', R: 'p3' };
+  for (const at of ['T', 'L', 'R', 'B']) {
+    const box = $('plays' + at); box.innerHTML = '';
+    const p = pos.findIndex(x => x.at === at);
+    box.className = 'plays ' + cls[at];
+    if (p < 0) continue;
+    if (p === topOwner && s.phase !== 'resolve') box.classList.add('top');
+    if (p === lastP && G.fly < 0) box.classList.add('new');
+    byP[p].forEach((e, i) => {
+      const el = cardEl(e.back ? null : e.c);
+      // свої скинуті карти знаємо; чужі закриті не мають ідентифікатора в DOM
+      el.dataset.c = e.back && p !== 0 ? 'h' + p + '_' + i : 'c' + e.c;
+      el.dataset.o = p;
+      box.appendChild(el);
+    });
+  }
+  $('cross').className = 'cross';
+  const c4 = $('center4'); c4.innerHTML = '';
+  if (s.stock.length) {
+    c4.appendChild(cardEl(s.trumpCard, { cls: 'trumpcard' }));
+    if (s.stock.length > 1) c4.appendChild(cardEl(null, { cls: 'deck' }));
+  } else {
+    const d = document.createElement('div'); d.className = 'suitonly';
+    d.style.color = s.trump >= 2 ? 'var(--red)' : 'var(--ink)'; d.textContent = L.SUIT_SYM[s.trump]; c4.appendChild(d);
+  }
+  const lb = document.createElement('div'); lb.className = 'lbl'; lb.textContent = stockWord(s.stock.length, n);
+  c4.appendChild(lb);
+}
+
+function renderActions(mine) {
+  const box = $('actions'); box.innerHTML = '';
+  const s = G.deal;
+  const mk = (txt, fn, enabled, primary) => {
+    const b = document.createElement('button'); b.className = 'btn' + (primary ? ' primary' : '');
+    b.textContent = txt; b.disabled = !enabled; b.onclick = fn; box.appendChild(b); return b;
+  };
+  if (!mine || s.phase === 'resolve' || s.phase === 'dealEnd') {
+    const a = L.toAct(s);
+    mk(G.busy && a > 0 ? nm(a) + ' думає…' : 'Зачекайте', null, false); return;
+  }
+  const sel = [...G.sel];
+  if (s.phase === 'attack') {
+    const ok = sel.length > 0 && L.isUniform(sel);
+    mk(sel.length > 1 ? 'Походити ' + cardsWord(sel.length) : 'Походити', () => act({ type: 'attack', cards: sel }), ok, true);
+    return;
+  }
+  if (s.phase === 'intercept') {
+    mk('Перехопити 4 картами', () => act({ type: 'intercept' }), true, true);
+    mk('Не перехоплювати', () => act({ type: 'pass' }), true);
+    return;
+  }
+  const n = s.table.top.length;
+  const full = sel.length === n;
+  const inter = L.canIntercept(s);
+  if (inter) mk('Перехопити 4 картами', () => act({ type: 'intercept' }), true, true);
+  const covers = L.legalActions(s).filter(x => x.type === 'cover');
+  // Побити нічим і скидати доведеться всю руку: одна кнопка, без вибору карт
+  if (!covers.length && s.hands[0].length === n) {
+    mk('Скинути', () => act({ type: 'discard', cards: s.hands[0].slice() }), true, !inter);
+    return;
+  }
+  // «Побити» — лише якщо вибрані карти входять хоча б в один варіант бою
+  const beatOk = covers.some(c => sel.every(x => c.cards.includes(x)));
+  const discOk = sel.length <= n;
+  if (beatOk) mk('Побити', () => act({ type: 'cover', cards: sel }), full && L.canCover(s.table.top, sel, s.trump), !inter);
+  if (discOk) mk('Скинути', () => act({ type: 'discard', cards: sel }), full, !beatOk && !inter);
+  if (!beatOk && !discOk) mk('Забагато карт: потрібно ' + n, null, false);
+}
+
+// ---------- Анімація (FLIP): карти плавно їдуть зі старого місця на нове ----------
+const motionOK = () => !window.matchMedia || !matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EASE = 'cubic-bezier(.2,.8,.2,1)';
+// Швидкість руху карт: 1 — початкова; 0.85 — на 15% повільніше
+const SPEED = 0.85;
+const dur = ms => Math.round(ms / SPEED);
+function seatAva(p) {
+  if (!G.deal || p === 0) return null;
+  const at = POS[G.deal.n][p].at;
+  return document.querySelector('#seat' + at + ' .ava');
+}
+const centerOf = r => [r.left + r.width / 2, r.top + r.height / 2];
+function snapshot() {
+  const m = new Map();
+  document.querySelectorAll('[data-c]').forEach(el => m.set(el.dataset.c, el.getBoundingClientRect()));
+  return m;
+}
+function playFlip(before) {
+  const deckEl = $('center4'), deck = deckEl && deckEl.getBoundingClientRect();
+  let fresh = 0;
+  document.querySelectorAll('[data-c]').forEach(el => {
+    const now = el.getBoundingClientRect();
+    if (!now.width) return;
+    let from = before.get(el.dataset.c), opacity = 1, delay = 0, scale;
+    if (from) {
+      scale = from.width / now.width;
+    } else {
+      // нова карта: у руку — з колоди, на стіл — від аватара того, хто зіграв
+      if (el.closest('#myHand')) from = deck;
+      else { const a = seatAva(+el.dataset.o); if (!a) return; from = a.getBoundingClientRect(); opacity = 0; }
+      if (!from) return;
+      scale = 0.45; delay = fresh++ * dur(70);
+    }
+    const [fx, fy] = centerOf(from), [nx, ny] = centerOf(now);
+    const dx = fx - nx, dy = fy - ny;
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(scale - 1) < 0.02) return;
+    el.animate([
+      { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity },
+      { transform: 'none', opacity: 1 },
+    ], { duration: dur(420), delay, easing: EASE, fill: 'backwards' });
+  });
+}
+function render() {
+  const before = motionOK() ? snapshot() : null;
+  renderCore();
+  if (before) playFlip(before);
+}
+// Взятка з'їжджає до того, хто її забрав
+function collectTo(w) {
+  if (!motionOK()) return;
+  const target = w === 0 ? $('myHand') : seatAva(w);
+  if (!target) return;
+  const [tx, ty] = centerOf(target.getBoundingClientRect());
+  document.querySelectorAll('.plays .card').forEach((el, i) => {
+    const [cx, cy] = centerOf(el.getBoundingClientRect());
+    el.animate([
+      { transform: 'none', opacity: 1 },
+      { transform: `translate(${tx - cx}px, ${ty - cy}px) scale(.35)`, opacity: 0 },
+    ], { duration: dur(480), delay: i * dur(25), easing: 'cubic-bezier(.55,0,.75,.4)', fill: 'forwards' });
+  });
+}
+
+// ---------- Хід гри ----------
+function later(fn, ms) { clearTimeout(G.timer); G.timer = setTimeout(fn, ms); }
+function act(a) {
+  if (G.busy || L.toAct(G.deal) !== 0) return;
+  haptic.act();
+  if (G.net.room) { // онлайн: хід перевіряє сервер
+    if (G.net.sent) return;
+    G.net.sent = true; G.sel.clear();
+    netSend({ t: 'act', a: { type: a.type, cards: a.cards } });
+    render(); return;
+  }
+  perform(0, a);
+}
+
+function perform(p, a) {
+  const s = G.deal;
+  G.prompt = ''; G.sel.clear();
+  if (a.type === 'attack') G.chips = { [p]: 'ходить' };
+  else if (a.type === 'intercept') G.chips = { [p]: 'перехопив' };
+  else if (a.type === 'cover') G.chips[p] = "б'є";
+  else if (a.type === 'discard') G.chips[p] = 'скинув';
+  if (a.type === 'attack') {
+    L.applyAction(s, a);
+    G.notes = [p === 0 ? `Ви пішли: ${labels(a.cards)}.` : `${nm(p)} ходить: ${labels(a.cards)}.`];
+  } else if (a.type === 'pass') {
+    L.applyAction(s, a);
+    if (p === 0) G.notes.push('Ви не перехоплюєте.');
+  } else if (a.type === 'intercept') {
+    const back = s.table.attack.slice(), from = s.table.by;
+    L.applyAction(s, a);
+    G.pending = '';
+    G.notes = [(p === 0 ? 'Ви перехопили хід: ' : `${nm(p)} перехоплює хід: `) + labels(s.table.attack) + '.',
+      from === 0 ? `Ваші ${labels(back)} повернулися в руку.` : `Карти ${gen(from)} ${labels(back)} повернулися ${from === p ? '' : 'йому '}в руку.`];
+  } else {
+    L.applyAction(s, a);
+    G.pending = '';
+    if (a.type === 'cover') G.notes.push(p === 0 ? `Ви б'єте: ${labels(s.table.top)}.` : `${nm(p)} б'є: ${labels(s.table.top)}.`);
+    else G.notes.push(p === 0 ? `Ви скинули ${cardsWord(a.cards.length)}.` : `${nm(p)} скидає ${cardsWord(a.cards.length)}.`);
+  }
+  render();
+  later(step, p === 0 ? 350 : 500);
+}
+
+function promptMe() {
+  const s = G.deal;
+  if (s.phase === 'attack') { G.prompt = 'Ваш хід: одна карта або кілька однієї масті чи одного номіналу.'; return; }
+  if (s.phase === 'intercept') { G.prompt = 'У вас чотири карти однієї масті чи номіналу. Перехопити хід?'; return; }
+  const t = s.table, k = t.top.length;
+  const owner = t.topBy === null ? t.by : t.topBy;
+  const canBeat = L.legalActions(s).some(x => x.type === 'cover');
+  if (isMate(owner)) G.prompt = `Старші зараз карти Брата. ${canBeat ? 'Можна перебити або скинути' : 'Скиньте'} ${cardsWord(k)}.`;
+  else G.prompt = canBeat ? `Побийте ${k === 1 ? 'карту' : 'карти'} ${gen(owner)} або скиньте ${cardsWord(k)}.` : `Побити нічим, скиньте ${cardsWord(k)}.`;
+  if (L.canIntercept(s)) G.prompt += ' Або перехопіть хід чотирма картами.';
+}
+
+function step() {
+  const s = G.deal;
+  if (s.phase === 'dealEnd') { G.busy = false; render(); return endDeal(); }
+  if (s.phase === 'resolve') {
+    const w = L.trickWinner(s);
+    const res = w === 0 ? 'Взятка ваша.' : isMate(w) ? 'Взятку забирає Брат, вона наша.' : `Взятку забирає ${n_() === 2 ? 'бот' : nm(w)}.`;
+    G.notes.push(res); G.prompt = '';
+    {
+      G.chips = { [w]: 'взятка' }; render();
+      if (w === 0 || isMate(w)) haptic.good();
+      later(() => {
+        collectTo(w);
+        later(() => { L.finishTrick(s); G.notes = []; G.pending = res; render(); later(step, 150); }, dur(560));
+      }, 850);
+      return;
+    }
+    render();
+    later(() => { L.finishTrick(s); G.notes = []; G.pending = res; render(); later(step, 250); }, 1400);
+    return;
+  }
+  const p = L.toAct(s);
+  if (p !== 0) {
+    G.busy = true; G.prompt = ''; render();
+    later(() => { const a = AI.chooseAction(s, G.level, G.rng); G.busy = false; perform(p, a); }, 550);
+  } else { G.busy = false; promptMe(); render(); }
+}
+
+function startSeries() {
+  if (G.net.room) { netSend({ t: 'leave' }); G.net.room = null; }
+  tgGuard(true);
+  try { localStorage.setItem('kozel-level', G.level); localStorage.setItem('kozel-mode', G.mode); } catch (e) {}
+  clearTimeout(G.timer);
+  G.ser = L.newSeries(G.mode); G.started = true; closeSheet(); startDeal(true);
+}
+function startDeal(first) {
+  const s = L.newDeal(G.rng, G.ser.n, first, G.ser.nextStarter);
+  G.deal = s; G.sel.clear(); G.notes = []; G.prompt = ''; G.chips = {}; G.fly = -1;
+  G.chips = { [s.attacker]: 'перший' };
+  const who = s.attacker === 0 ? 'Ви ходите першим' : `Першим ходить ${nm(s.attacker).toLowerCase() === 'бот' ? 'бот' : nm(s.attacker)}`;
+  let t = `Роздача ${G.ser.dealNo + 1}. Козир ${L.SUIT_SYM[s.trump]} ${L.SUIT_NAME[s.trump]}. `;
+  if (first) {
+    if (s.trumpChanges) t += 'Козирів ні в кого не було, тому козир замінено. ';
+    t += who + ' (найменший козир).';
+  } else t += who + ' (остання взятка).';
+  if (G.ser.mult > 1) t += ` Штрафи в цій роздачі ×${G.ser.mult}.`;
+  G.pending = t; render();
+  later(step, 1400);
+}
+
+function endDeal() {
+  const s = G.deal, ser = G.ser;
+  const res = L.dealResult(s, ser.mult);
+  const rec = L.applyDealToSeries(ser, res, s.lastTrick);
+  render();
+  showDealEnd(res, rec, ser);
+}
+// Підсумок роздачі (офлайн і онлайн). Індекс 0 — це завжди ви (або ваша команда).
+function showDealEnd(res, rec, ser) {
+  const n = ser.n, on = !!G.net.room;
+  const penWord = k => k + ' ' + plural(k, 'штрафне', 'штрафні', 'штрафних');
+  const why = b => b === 4 ? 'ані очка' : b === 2 ? 'до 30 очок' : 'менше 60 очок';
+  const pen = k => k + ' ' + plural(k, 'штрафне очко', 'штрафні очки', 'штрафних очок');
+  let h = '';
+  if (n === 2) {
+    h += `<h2>${res.eggs ? 'Яйця!' : res.loser === 0 ? 'Роздачу програно' : 'Роздачу виграно'}</h2>`;
+    h += `<div class="big">${res.pts[0]}<span>ви : ${esc(nm(1))}</span>${res.pts[1]}</div>`;
+    if (res.eggs) h += `<p>Рівно 60 на 60. Грається додаткова роздача, штрафи в ній для програвшого ×${ser.mult}.</p>`;
+    else h += `<p>${res.loser === 0 ? 'Ви отримуєте' : esc(nm(1)) + ' отримує'} ${pen(res.penalty)} (${why(res.base)}${rec.mult > 1 ? ', ×' + rec.mult + ' за яйця' : ''}).</p>`;
+    h += `<div class="tally"><div>Ваші очки<b>${ser.penalties[0]}</b></div><div>${esc(nm(1))}<b>${ser.penalties[1]}</b></div></div>`;
+  } else if (n === 4) {
+    h += `<h2>${res.eggs ? 'Яйця!' : res.loser === 0 ? 'Роздачу програно' : 'Роздачу виграно'}</h2>`;
+    h += `<div class="big">${res.teamPts[0]}<span>ми : вони</span>${res.teamPts[1]}</div>`;
+    h += `<p>Ви ${res.pts[0]}, ${esc(nm(2))} ${res.pts[2]}; ${esc(nm(1))} ${res.pts[1]}, ${esc(nm(3))} ${res.pts[3]}.</p>`;
+    if (res.eggs) h += `<p>Рівно 60 на 60. Грається додаткова роздача, штрафи в ній для програвших ×${ser.mult}.</p>`;
+    else h += `<p>${res.loser === 0 ? 'Наша команда отримує' : 'Команда суперників отримує'} ${pen(res.penalty)} (${why(res.base)}${rec.mult > 1 ? ', ×' + rec.mult + ' за яйця' : ''}).</p>`;
+    h += `<div class="tally"><div>Наші очки<b>${ser.penalties[0]}</b></div><div>Їхні очки<b>${ser.penalties[1]}</b></div></div>`;
+  } else {
+    h += `<h2>${res.pens[0] === 0 ? 'Роздачу виграно' : 'Роздачу програно'}</h2>`;
+    h += `<table class="res"><tr><th></th><th>Набрано</th><th>Штраф</th><th>Усього</th></tr>`;
+    for (let i = 0; i < n; i++)
+      h += `<tr><td>${esc(nm(i))}</td><td><b>${res.pts[i]}</b></td><td>${res.pens[i] ? '+' + res.pens[i] : '—'}</td><td>${ser.penalties[i]}</td></tr>`;
+    h += `</table><p>Перемагає найбільша сума. Решта: менше 60 очок — 1 штрафне, до 30 — 2, нуль — 4.</p>`;
+  }
+  if (ser.over) {
+    if (!on) tgGuard(false);
+    const lost = n === 4 ? ser.loser === 0 : ser.losers.includes(0); lost ? haptic.bad() : haptic.good();
+    let title;
+    if (n === 4) title = (ser.loser === 0 ? 'Ми ' : 'Вони ') + (ser.milk ? 'молочні козли' : 'козли');
+    else {
+      const ls = ser.losers, goat = ser.milk ? 'молочний козел' : 'козел', many = ser.milk ? 'молочні козли' : 'козли';
+      if (ls.includes(0)) title = ls.length > 1 ? `Ви і ${esc(nm(ls.find(x => x)))}: ${many}` : `Ви ${goat}`;
+      else title = ls.map(x => esc(nm(x))).join(' і ') + (ls.length > 1 ? ': ' + many : ' ' + goat);
+    }
+    h += `<h2 style="margin-top:18px">${title}</h2><p>${ser.milk ? (n === 3 ? 'У когось 6 штрафних, а в когось нуль' : '6 штрафних проти нуля') + ': найгірший програш, гру закінчено достроково.' : '12 штрафних очок, гру закінчено.'}</p>`;
+    if (n === 3) {
+      const order = [0, 1, 2].sort((a, b) => ser.penalties[a] - ser.penalties[b]);
+      h += '<ol class="places">' + order.map(i => `<li>${esc(nm(i))}: ${penWord(ser.penalties[i])}</li>`).join('') + '</ol>';
+    }
+    if (on) h += `<div class="stack"><button class="btn primary" id="next">Ще партію</button><button class="btn" id="leaveBtn">Вийти з-за столу</button></div>`;
+    else h += `<div class="stack"><button class="btn primary" id="again">Нова гра</button></div>`;
+  } else {
+    h += `<div class="stack"><button class="btn primary" id="next">${on ? 'Далі' : 'Наступна роздача'}</button></div>`;
+  }
+  openSheet(h, 'dealEnd');
+  if ($('again')) $('again').onclick = openMenu;
+  if ($('leaveBtn')) $('leaveBtn').onclick = () => { netSend({ t: 'leave' }); };
+  if ($('next')) {
+    $('next').focus();
+    $('next').onclick = on
+      ? () => { netSend({ t: 'ready' }); $('next').disabled = true; $('next').textContent = 'Чекаємо інших…'; }
+      : () => { closeSheet(); startDeal(false); };
+  }
+}
+
+// ---------- Telegram Mini App (працює лише всередині Telegram; у браузері нічого не робить) ----------
+const TG = (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData) ? Telegram.WebApp : null;
+const tgv = v => TG && TG.isVersionAtLeast && TG.isVersionAtLeast(v);
+function tgTheme() {
+  if (!TG) return;
+  document.documentElement.dataset.theme = TG.colorScheme === 'light' ? 'light' : 'dark';
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--wood-2').trim();
+  if (tgv('6.1')) { try { TG.setHeaderColor(bg); TG.setBackgroundColor(bg); } catch (e) {} }
+  if (tgv('7.10')) { try { TG.setBottomBarColor(bg); } catch (e) {} }
+}
+const haptic = {
+  tap() { if (tgv('6.1')) TG.HapticFeedback.selectionChanged(); },
+  act() { if (tgv('6.1')) TG.HapticFeedback.impactOccurred('light'); },
+  good() { if (tgv('6.1')) TG.HapticFeedback.notificationOccurred('success'); },
+  bad() { if (tgv('6.1')) TG.HapticFeedback.notificationOccurred('error'); },
+};
+function tgBack() {
+  if (!tgv('6.1')) return;
+  // «Назад» у шапці Telegram закриває меню, якщо гра вже йде
+  if (!$('sheet').hidden && $('resumeBtn')) TG.BackButton.show();
+  else TG.BackButton.hide();
+}
+function tgGuard(on) {
+  if (!tgv('6.2')) return;
+  if (on) TG.enableClosingConfirmation(); else TG.disableClosingConfirmation();
+}
+if (TG) {
+  TG.ready();
+  TG.expand();
+  if (tgv('7.7')) { try { TG.disableVerticalSwipes(); } catch (e) {} } // щоб свайп по картах не згортав гру
+  tgTheme();
+  TG.onEvent('themeChanged', () => { tgTheme(); render(); });
+  if (tgv('6.1')) TG.BackButton.onClick(() => { closeSheet(); });
+}
+
+// ---------- Онлайн: гра з друзями через сервер ----------
+function guestId() {
+  try {
+    let id = localStorage.getItem('kozel-guest');
+    if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem('kozel-guest', id); }
+    return id;
+  } catch (e) { return 'tmp' + Math.random().toString(36).slice(2, 12); }
+}
+function netConnect() {
+  if (!window.KOZEL_ONLINE) return;
+  const N = G.net;
+  if (N.ws && N.ws.readyState <= 1) return;
+  const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+  N.ws = ws;
+  ws.onopen = () => {
+    N.retry = 0;
+    ws.send(JSON.stringify({ t: 'hello', initData: TG ? TG.initData : '', join: N.join,
+      guest: { id: guestId(), name: 'Гість ' + guestId().slice(0, 3).toUpperCase() } }));
+    N.join = null;
+    while (N.queue.length) ws.send(JSON.stringify(N.queue.shift()));
+  };
+  ws.onmessage = e => { try { netOnMessage(JSON.parse(e.data)); } catch (err) { console.error(err); } };
+  ws.onclose = () => {
+    if (N.ws !== ws) return;
+    N.ws = null;
+    if (N.room) toast('Зв’язок перервано, відновлюємо…');
+    setTimeout(netConnect, Math.min(8000, 700 * (++N.retry)));
+  };
+}
+function netSend(m) {
+  const ws = G.net.ws;
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify(m));
+  else { G.net.queue.push(m); netConnect(); }
+}
+function netOnMessage(m) {
+  if (m.t === 'welcome') { G.net.me = m.me; return; }
+  if (m.t === 'error') { G.net.sent = false; toast(m.msg); render(); return; }
+  if (m.t === 'left') {
+    G.net.room = null; G.deal = null; G.ser = null; G.chips = {}; tgGuard(false);
+    render(); openMenu(); return;
+  }
+  if (m.t === 'room') netApply(m);
+}
+function applyEv(ev, v) {
+  switch (ev.t) {
+    case 'deal': G.chips = { [ev.p]: 'перший' }; break;
+    case 'attack': G.chips = { [ev.p]: 'ходить' }; break;
+    case 'intercept': G.chips = { [ev.p]: 'перехопив' }; break;
+    case 'cover': G.chips[ev.p] = "б'є"; break;
+    case 'discard': G.chips[ev.p] = 'скинув'; break;
+    case 'collected': G.chips = {}; break;
+  }
+  if (v.deal && v.deal.phase === 'resolve') {
+    const w = v.deal.winner;
+    G.chips = { [w]: 'взятка' };
+    if (w === 0 || (v.n === 4 && w === 2)) haptic.good();
+    clearTimeout(applyEv.tm);
+    applyEv.tm = setTimeout(() => collectTo(w), 850);
+  }
+}
+function netApply(v) {
+  const N = G.net;
+  N.room = v; N.names = v.names.map((x, i) => i === 0 ? 'Ви' : x); N.sent = false;
+  clearTimeout(G.timer); G.started = false;
+  if (v.status === 'lobby') {
+    G.deal = null; G.ser = null; G.chips = {}; N.shown = null;
+    render();
+    if (N.lobbyOpen || $('sheet').hidden || G.sheetKind !== 'menu') showLobby(v);
+    return;
+  }
+  tgGuard(true);
+  G.mode = v.n; G.deal = v.deal; G.ser = v.ser;
+  if (v.ev && v.ev.seq !== N.lastSeq) { N.lastSeq = v.ev.seq; applyEv(v.ev, v); }
+  G.busy = !!G.deal && L.toAct(G.deal) > 0;
+  G.sel = new Set([...G.sel].filter(c => G.deal && G.deal.hands[0].includes(c)));
+  if (G.sheetKind === 'lobby') closeSheet();
+  render();
+  if (v.status === 'dealEnd' || v.status === 'over') {
+    const key = v.ser.dealNo + ':' + v.status;
+    if (N.shown !== key) { N.shown = key; showDealEnd(v.result, v.rec, v.ser); }
+    const btn = $('next');
+    if (btn && btn.disabled) {
+      btn.textContent = v.waiting.length ? 'Чекаємо: ' + v.waiting.join(', ') : 'Чекаємо інших…';
+    }
+  } else if (G.sheetKind === 'dealEnd') closeSheet();
+}
+function showLobby(v) {
+  G.net.lobbyOpen = true;
+  const n = v.n;
+  let h = `<h2>Стіл ${v.code}</h2><p>${MODE_NAME[n]}. Сила ботів: ${LEVEL_NAME[v.level].toLowerCase()}.</p><div class="seats">`;
+  v.seats.forEach((x, i) => {
+    const place = `місце ${i + 1}` + (n === 4 ? `<br>команда ${i % 2 === 0 ? 'А' : 'Б'}` : '');
+    let who, right = '';
+    if (!x) {
+      who = '<i>вільне місце</i>';
+      if (v.host) right += `<button class="mini" data-bot="${i}">+ бот</button>`;
+      right += `<button class="mini" data-seat="${i}">Сісти</button>`;
+    } else {
+      who = esc(x.name) + (x.me ? ' (ви)' : '') + (x.bot ? ' (бот)' : '') + (x.host ? ' ★' : '');
+      if (x.bot && v.host) right = `<button class="mini" data-unbot="${i}">Прибрати</button>`;
+    }
+    h += `<div class="seatrow${x && x.me ? ' me' : ''}"><span class="no">${place}</span><span class="who">${who}</span>${right}</div>`;
+  });
+  h += `</div>`;
+  if (n === 4) h += `<p>Партнери сидять навпроти: команда А — місця 1 і 3, команда Б — місця 2 і 4.</p>`;
+  if (v.host) {
+    h += `<div class="menu-lbl">Сила ботів</div><div class="stack"><div class="row">` +
+      [['easy', 'Легкий'], ['medium', 'Середній'], ['hard', 'Сильний']].map(([k, t]) =>
+        `<button class="btn${k === v.level ? ' primary' : ''}" data-nlv="${k}">${t}</button>`).join('') + `</div></div>`;
+  }
+  h += `<div class="stack"><button class="btn" id="inviteBtn">Запросити друзів</button>`;
+  if (v.host) h += `<button class="btn primary" id="goBtn"${v.seats.every(Boolean) ? '' : ' disabled'}>${v.seats.every(Boolean) ? 'Почати гру' : 'Заповніть усі місця'}</button>`;
+  else h += `<p style="text-align:center">Гру почне господар столу ★</p>`;
+  h += `<button class="btn" id="leaveBtn">Вийти з-за столу</button></div>`;
+  openSheet(h, 'lobby');
+  document.querySelectorAll('[data-bot]').forEach(b => b.onclick = () => netSend({ t: 'bot', i: +b.dataset.bot }));
+  document.querySelectorAll('[data-unbot]').forEach(b => b.onclick = () => netSend({ t: 'unbot', i: +b.dataset.unbot }));
+  document.querySelectorAll('[data-seat]').forEach(b => b.onclick = () => netSend({ t: 'seat', i: +b.dataset.seat }));
+  document.querySelectorAll('[data-nlv]').forEach(b => b.onclick = () => netSend({ t: 'level', level: b.dataset.nlv }));
+  $('inviteBtn').onclick = () => invite(v);
+  if ($('goBtn')) $('goBtn').onclick = () => netSend({ t: 'start' });
+  $('leaveBtn').onclick = () => { G.net.lobbyOpen = false; netSend({ t: 'leave' }); };
+}
+function invite(v) {
+  const link = v.invite || (location.origin + location.pathname + '?room=' + v.code);
+  const text = `Сідай за стіл у «Боярського козла»! Код столу: ${v.code}`;
+  if (TG && tgv('6.1')) TG.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text));
+  else if (navigator.share) navigator.share({ title: 'Боярський козел', text, url: link }).catch(() => {});
+  else if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => toast('Посилання скопійовано'), () => toast(link));
+  else toast(link);
+}
+
+// ---------- Меню ----------
+function openSheet(html, kind) { G.sheetKind = kind || 'menu'; $('sheetBody').innerHTML = html; $('sheet').hidden = false; tgBack(); }
+function closeSheet() { $('sheet').hidden = true; G.sheetKind = null; tgBack(); }
+function toast(t) {
+  const el = $('toast'); el.textContent = t; el.hidden = false;
+  clearTimeout(toast.tm); toast.tm = setTimeout(() => { el.hidden = true; }, 3200);
+}
+const RULES = `
+<div class="rules">
+<h3>Карти</h3>
+<p>36 карт. Старшинство і очки: туз 11, десятка 10, король 4, дама 3, валет 2, дев'ятка, вісімка, сімка, шістка 0. Десятка старша за короля. Разом 120 очок.</p>
+<h3>Роздача</h3>
+<p>По 4 карти. Остання карта колоди світить, її масть козир. У першій роздачі ходить той, у кого найменший козир; далі той, хто взяв останню взятку. Після кожної взятки добирають до 4 карт, першим той, хто взяв взятку, далі по черзі.</p>
+<h3>Хід</h3>
+<ul><li>Ходити можна однією картою або кількома однієї масті чи одного номіналу.</li>
+<li>Щоб побити, кожну карту треба бити окремо: старшою тієї ж масті або козирем.</li>
+<li>Не можете чи не хочете бити, скидаєте стільки ж карт сорочкою догори. Скинутих карт не бачить ніхто до підрахунку.</li>
+<li>На двох: побили, забираєте взятку і ходите; скинули, взятку забирає атакуючий.</li>
+<li>На трьох і пара на пару: після ходу по черзі кожен б'є карти того, хто побив останнім (або атакуючого), чи скидає. Взятку забирає той, хто побив останнім, а якщо не побив ніхто, атакуючий.</li>
+<li>Пара на пару: партнери сидять навпроти. Партнер може перебити свого або скинути йому дорогі карти.</li></ul>
+<h3>Хід без черги</h3>
+<p>Якщо на руці 4 карти однієї масті або одного номіналу, після ходу суперника можна перехопити: його карти повертаються йому, а решта мають побити або скинути 4 карти.</p>
+<h3>Штрафи</h3>
+<ul><li>На двох: менше 60 очок — 1 штрафне, до 30 — 2, нуль — 4. 60 на 60 — яйця: додаткова роздача, штрафи подвоюються. 6 штрафних проти 0 — молочний козел.</li>
+<li>На трьох: перемагає найбільша сума, решта отримують штрафи за тією ж шкалою. Нічия за перше місце — обидва без штрафу. Яєць немає. Молочний козел: у когось 6 і більше, а в когось 0.</li>
+<li>Пара на пару: очки партнерів складаються, далі все як на двох, тільки штрафи записуються на команду.</li>
+<li>12 штрафних — козел, гра закінчується.</li></ul>
+</div>`;
+function openMenu() {
+  G.net.lobbyOpen = false;
+  let mode = G.mode, level = G.level;
+  const btns = (key, opts, cur) => `<div class="row">` + opts.map(([v, t]) =>
+    `<button class="btn${v === cur ? ' primary' : ''}" data-${key}="${v}" aria-pressed="${v === cur}">${t}</button>`).join('') + `</div>`;
+  let h = `<h2>Боярський козел</h2>`;
+  h += `<div class="menu-lbl">Гравці</div><div class="stack">` + btns('md', [[2, 'На двох'], [3, 'На трьох'], [4, 'Пара на пару']], mode) + `</div>`;
+  h += `<div class="menu-lbl">Сила ботів</div><div class="stack">` + btns('lv', [['easy', 'Легкий'], ['medium', 'Середній'], ['hard', 'Сильний']], level) + `</div>`;
+  if (G.net.room) h += `<div class="stack"><button class="btn primary" id="resumeBtn">Повернутися за стіл ${G.net.room.code}</button></div>`;
+  h += `<div class="stack"><button class="btn${G.net.room ? '' : ' primary'}" id="startBtn">Грати з ботами</button>`;
+  if (G.started && !G.net.room && !G.ser.over) h += `<button class="btn" id="resumeBtn">Продовжити поточну</button>`;
+  h += `</div>`;
+  if (window.KOZEL_ONLINE) {
+    h += `<div class="menu-lbl">З друзями онлайн</div><div class="stack">`;
+    h += `<button class="btn" id="createBtn">Створити стіл</button>`;
+    h += `<div class="joinrow"><input id="codeIn" maxlength="4" placeholder="КОД" autocomplete="off" aria-label="Код столу"><button class="btn" id="joinBtn">Увійти</button></div></div>`;
+  }
+  h += RULES;
+  openSheet(h);
+  const wire = (key, set) => document.querySelectorAll(`[data-${key}]`).forEach(b => b.onclick = () => {
+    set(b.dataset[key]);
+    document.querySelectorAll(`[data-${key}]`).forEach(x => { x.classList.toggle('primary', x === b); x.setAttribute('aria-pressed', x === b); });
+  });
+  wire('md', v => mode = +v); wire('lv', v => level = v);
+  $('startBtn').onclick = () => { G.mode = mode; G.level = level; startSeries(); };
+  if ($('resumeBtn')) $('resumeBtn').onclick = () => { if (G.net.room && G.net.room.status === 'lobby') showLobby(G.net.room); else closeSheet(); };
+  if ($('createBtn')) $('createBtn').onclick = () => { G.mode = mode; G.level = level; G.net.lobbyOpen = true; netSend({ t: 'create', n: mode, level }); };
+  if ($('joinBtn')) $('joinBtn').onclick = () => {
+    const c = $('codeIn').value.trim().toUpperCase();
+    if (c.length !== 4) { toast('Код столу — 4 символи'); return; }
+    G.net.lobbyOpen = true; netSend({ t: 'join', code: c });
+  };
+}
+$('menuBtn').onclick = openMenu;
+G.prompt = 'Оберіть гру в меню.';
+render();
+openMenu();
+if (window.KOZEL_ONLINE) {
+  // запрошення: t.me/бот/гра?startapp=КОД або ?room=КОД у браузері
+  const q = new URLSearchParams(location.search).get('room');
+  const sp = TG && TG.initDataUnsafe && TG.initDataUnsafe.start_param;
+  G.net.join = (sp || q || '').toUpperCase() || null;
+  G.net.lobbyOpen = true;
+  netConnect();
+}
+</script>
+</body>
+</html>

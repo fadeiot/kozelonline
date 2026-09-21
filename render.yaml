@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: boyarskyi-kozel
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: BOT_USERNAME
+        sync: false
+      - key: APP_NAME
+        sync: false
