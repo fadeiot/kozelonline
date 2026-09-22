@@ -219,6 +219,8 @@ button.card:disabled{cursor:default}
   vertical-align:middle;margin-right:8px;overflow:hidden;flex:none;color:var(--ink)}
 .mini-ava img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .mini-ava.sm{width:20px;height:20px;font-size:.62rem;margin-right:5px}
+.menu-err{margin:2px 2px 0;color:var(--red);font-size:.88rem;min-height:0}
+.menu-err:empty{display:none}
 .btn.danger{background:var(--red);color:#fff;border-color:transparent}
 .menu-lbl{font-size:.82rem;color:var(--ink-muted);margin:12px 0 -2px}
 
@@ -1366,10 +1368,14 @@ function netSend(m) {
 function netOnMessage(m) {
   if (m.t === 'welcome') {
     G.net.me = m.me; G.net.lastRoom = m.lastRoom || null;
-    if (G.sheetKind === 'menu' && !G.net.room) openMenu();
+    if (G.sheetKind === 'menu' && !G.net.room) openMenu(G.menuByUser);
     return;
   }
-  if (m.t === 'error') { G.net.sent = false; toast(m.msg); render(); return; }
+  if (m.t === 'error') {
+    G.net.sent = false; toast(m.msg);
+    if (G.sheetKind === 'menu' && $('menuErr')) $('menuErr').textContent = m.msg;
+    render(); return;
+  }
   if (m.t === 'left') {
     G.net.lastRoom = m.lastRoom || null; G.net.away = [];
     Chat.list = []; Chat.unread = 0; chatClose(); chatPaint();
@@ -1418,7 +1424,8 @@ function netApply(v) {
   if (v.status === 'lobby') {
     G.deal = null; G.ser = null; G.chips = {}; N.shown = null;
     render();
-    if (N.lobbyOpen || $('sheet').hidden || G.sheetKind !== 'menu') showLobby(v);
+    if (N.lobbyOpen || !G.menuByUser || $('sheet').hidden || G.sheetKind !== 'menu') showLobby(v);
+    else if (!G.menuHadRoom) openMenu(true);
     return;
   }
   tgGuard(true);
@@ -1427,6 +1434,11 @@ function netApply(v) {
   G.busy = !!G.deal && L.toAct(G.deal) > 0;
   G.sel = new Set([...G.sel].filter(c => G.deal && G.deal.hands[0].includes(c)));
   if (G.sheetKind === 'lobby') closeSheet();
+  // меню, відкрите при запуску (а не гравцем), не повинно лишатися поверх гри
+  if (G.sheetKind === 'menu') {
+    if (!G.menuByUser || N.lobbyOpen) { N.lobbyOpen = false; closeSheet(); }
+    else if (!G.menuHadRoom) openMenu(true);
+  }
   render();
   if (v.status === 'dealEnd' || v.status === 'over') {
     const key = v.ser.dealNo + ':' + v.status;
@@ -1451,7 +1463,7 @@ function renderPause(v) {
   el.innerHTML = `<div class="pause-card">${h}</div>`;
   el.hidden = false;
   $('pauseInvite').onclick = () => invite(v);
-  $('pauseMenu').onclick = () => { G.net.pauseHidden = true; el.hidden = true; openMenu(); };
+  $('pauseMenu').onclick = () => { G.net.pauseHidden = true; el.hidden = true; openMenu(true); };
   el.querySelectorAll('[data-repl]').forEach(b => b.onclick = () => {
     // друге натискання підтверджує, щоб не замінити гравця випадково
     if (!b.dataset.sure) {
@@ -1533,7 +1545,7 @@ function confirmExit(back) {
 
 // ---------- Меню ----------
 function openSheet(html, kind) { G.sheetKind = kind || 'menu'; $('sheetBody').innerHTML = html; $('sheet').hidden = false; tgBack(); }
-function closeSheet() { $('sheet').hidden = true; G.sheetKind = null; tgBack(); }
+function closeSheet() { $('sheet').hidden = true; G.sheetKind = null; G.menuByUser = false; tgBack(); }
 function toast(t) {
   const el = $('toast'); el.textContent = t; el.hidden = false;
   clearTimeout(toast.tm); toast.tm = setTimeout(() => { el.hidden = true; }, 3200);
@@ -1559,7 +1571,8 @@ const RULES = `
 <li>Пара на пару: очки партнерів складаються, далі все як на двох, тільки штрафи записуються на команду.</li>
 <li>12 штрафних — козел, гра закінчується.</li></ul>
 </div>`;
-function openMenu() {
+function openMenu(byUser) {
+  G.menuByUser = byUser === true; G.menuHadRoom = !!G.net.room;
   G.net.lobbyOpen = false;
   let mode = G.mode, level = G.level;
   const btns = (key, opts, cur) => `<div class="row">` + opts.map(([v, t]) =>
@@ -1575,7 +1588,7 @@ function openMenu() {
   if (window.KOZEL_ONLINE) {
     h += `<div class="menu-lbl">З друзями онлайн</div><div class="stack">`;
     h += `<button class="btn" id="createBtn">Створити стіл</button>`;
-    h += `<div class="joinrow"><input id="codeIn" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="0000" autocomplete="off" aria-label="Код столу (4 цифри)"><button class="btn" id="joinBtn">Увійти</button></div></div>`;
+    h += `<div class="joinrow"><input id="codeIn" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="0000" autocomplete="off" aria-label="Код столу (4 цифри)"><button class="btn" id="joinBtn">Увійти</button></div><p class="menu-err" id="menuErr" role="alert"></p></div>`;
   }
   h += `<div class="stack"><button class="btn" id="musicMenuBtn">${Music.on ? '♫ Музика: увімкнена' : '♫ Музика: вимкнена'}</button></div>`;
   h += RULES;
@@ -1596,7 +1609,7 @@ function openMenu() {
     G.net.lobbyOpen = true; netSend({ t: 'join', code: c });
   };
 }
-$('menuBtn').onclick = openMenu;
+$('menuBtn').onclick = () => openMenu(true);
 // ---------- Таймери: загальний час гри і 1 хвилина на хід ----------
 const TURN_MS = 60000;
 function turnRemainMs() {
@@ -1744,6 +1757,9 @@ if (window.KOZEL_ONLINE) {
   G.net.join = (sp || q || '').replace(/\D/g, '') || null;
   G.net.lobbyOpen = true;
   netConnect();
+  // безкоштовний сервер може «спати»: показуємо, що ми не зависли
+  if (G.net.join) toast(`Під’єднуємось до столу ${G.net.join}…`);
+  setTimeout(() => { if (!G.net.ws || G.net.ws.readyState !== 1) toast('Сервер прокидається, це може зайняти до хвилини…'); }, 4000);
 }
 </script>
 </body>
