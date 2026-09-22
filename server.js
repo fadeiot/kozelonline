@@ -15,7 +15,21 @@ const AI = require('./ai.js');
 
 const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
-const BOT_USERNAME = (process.env.BOT_USERNAME || '').replace(/^@/, '');
+let BOT_USERNAME = (process.env.BOT_USERNAME || '').replace(/^@/, '');
+// Справжній логін бота беремо прямо в Telegram за токеном, щоб посилання-запрошення не ламались через помилку в налаштуваннях
+if (process.env.BOT_TOKEN && typeof fetch === 'function') {
+  fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/getMe`)
+    .then(r => r.json())
+    .then(j => {
+      if (j && j.ok && j.result && j.result.username) {
+        if (BOT_USERNAME && BOT_USERNAME.toLowerCase() !== j.result.username.toLowerCase())
+          console.log(`BOT_USERNAME у налаштуваннях (${BOT_USERNAME}) не збігається з ботом (${j.result.username}), використовую ${j.result.username}`);
+        BOT_USERNAME = j.result.username;
+        console.log('Бот: @' + BOT_USERNAME);
+      } else console.log('getMe: не вдалося отримати логін бота, перевірте BOT_TOKEN');
+    })
+    .catch(e => console.log('getMe помилка: ' + e.message));
+}
 const APP_NAME = process.env.APP_NAME || '';
 const ALLOW_GUESTS = !BOT_TOKEN || process.env.ALLOW_GUESTS === '1';
 
@@ -73,10 +87,10 @@ const rooms = new Map();          // код → стіл
 const userRoom = new Map();       // id гравця → код столу
 const sockets = new Map();        // id гравця → WebSocket
 const BOT_NAMES = ['Кум', 'Сват', 'Брат', 'Дядько'];
+// Код столу — 4 цифри (1000–9999), його легко ввести з цифрової клавіатури
 function newCode() {
-  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   for (;;) {
-    let c = ''; for (let i = 0; i < 4; i++) c += A[Math.floor(Math.random() * A.length)];
+    const c = String(1000 + Math.floor(Math.random() * 9000));
     if (!rooms.has(c)) return c;
   }
 }
@@ -258,7 +272,7 @@ function handle(ws, user, m) {
       return;
     }
     case 'join': {
-      const r = joinRoom(user, String(m.code || '').toUpperCase().trim());
+      const r = joinRoom(user, String(m.code || '').replace(/\D/g, ''));
       if (typeof r === 'string') return send(ws, { t: 'error', msg: r });
       broadcast(r); if (r.status === 'playing') schedule(r);
       return;
@@ -326,7 +340,7 @@ wss.on('connection', ws => {
         broadcast(room); if (room.status === 'playing') schedule(room);
       }
       if (m.join) {
-        const r = joinRoom(user, String(m.join).toUpperCase());
+        const r = joinRoom(user, String(m.join).replace(/\D/g, ''));
         if (typeof r === 'string') send(ws, { t: 'error', msg: r }); else { broadcast(r); if (r.status === 'playing') schedule(r); }
       }
       return;

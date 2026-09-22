@@ -161,6 +161,7 @@ button.card:disabled{cursor:default}
 .res td{padding:7px 6px;text-align:right;border-top:1px solid var(--line)}
 .res td b{font-family:var(--serif);font-size:1.15rem}
 .places{margin:8px 0 0;padding-left:1.3em;line-height:1.7}
+.btn.danger{background:var(--red);color:#fff;border-color:transparent}
 .menu-lbl{font-size:.82rem;color:var(--ink-muted);margin:12px 0 -2px}
 
 /* ===== Пара на пару: розкладка хрестом ===== */
@@ -803,7 +804,10 @@ function renderCore() {
   $('msg').textContent = [G.pending, ...G.notes, G.prompt].filter(Boolean).join(' ');
   document.body.classList.add('m4');
   $('board4').hidden = false;
-  if (!s) return;
+  if (!s) {
+    for (const id of ['seatT', 'seatL', 'seatR', 'playsT', 'playsL', 'playsR', 'playsB', 'center4', 'myHand', 'actions']) $(id).innerHTML = '';
+    return;
+  }
   const actor = L.toAct(s);
   renderBoard(s, actor);
 
@@ -1188,9 +1192,11 @@ function showDealEnd(res, rec, ser) {
     if (on) h += `<div class="stack"><button class="btn primary" id="next">Ще партію</button><button class="btn" id="leaveBtn">Вийти з-за столу</button></div>`;
     else h += `<div class="stack"><button class="btn primary" id="again">Нова гра</button></div>`;
   } else {
-    h += `<div class="stack"><button class="btn primary" id="next">${on ? 'Далі' : 'Наступна роздача'}</button></div>`;
+    h += `<div class="stack"><button class="btn primary" id="next">${on ? 'Далі' : 'Наступна роздача'}</button>` +
+      `<button class="btn" id="exitBtn">Вийти в головне меню</button></div>`;
   }
   openSheet(h, 'dealEnd');
+  if ($('exitBtn')) $('exitBtn').onclick = () => confirmExit(() => showDealEnd(res, rec, ser));
   if ($('again')) $('again').onclick = openMenu;
   if ($('leaveBtn')) $('leaveBtn').onclick = () => { netSend({ t: 'leave' }); };
   if ($('next')) {
@@ -1366,6 +1372,28 @@ function invite(v) {
   else if (navigator.share) navigator.share({ title: 'Боярський козел', text, url: link }).catch(() => {});
   else if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => toast('Посилання скопійовано'), () => toast(link));
   else toast(link);
+}
+
+// Вихід у меню з другим підтвердженням, щоб не вийти випадково
+function confirmExit(back) {
+  const on = !!G.net.room;
+  let h = `<h2>Вийти в головне меню?</h2>`;
+  h += on ? `<p>Ви вийдете з-за столу ${G.net.room.code}. Ваше місце до кінця партії займе бот.</p>`
+          : `<p>Поточну партію буде завершено, рахунок не збережеться.</p>`;
+  h += `<div class="stack"><button class="btn danger" id="exitYes">Так, вийти</button><button class="btn primary" id="exitNo">Ні, грати далі</button></div>`;
+  openSheet(h, 'confirm');
+  $('exitNo').focus();
+  $('exitNo').onclick = () => {
+    // онлайн: якщо інші вже почали нову роздачу, просто повертаємось до столу
+    if (on && G.net.room && G.net.room.status === 'playing') closeSheet(); else back();
+  };
+  $('exitYes').onclick = () => {
+    haptic.act();
+    if (on) { G.net.lobbyOpen = false; netSend({ t: 'leave' }); return; }
+    clearTimeout(G.timer);
+    G.started = false; G.deal = null; G.ser = null; G.chips = {}; G.sel.clear();
+    tgGuard(false); render(); openMenu();
+  };
 }
 
 // ---------- Меню ----------
