@@ -192,12 +192,15 @@ button.card:disabled{cursor:default}
 .plays .card .idx{font-size:calc(var(--w)*.3)}
 .plays.top .card:not(.back){box-shadow:0 0 0 2.5px var(--brass),0 4px 10px rgba(0,0,0,.35)}
 .plays .card.back{rotate:-6deg;opacity:.92}
-.center4{grid-column:1;grid-row:1;position:relative;width:72px;height:84px;align-self:start}
-.center4 .card{position:absolute;--w:38px}
-.center4 .deck{left:2px;top:2px;box-shadow:2px 2px 0 var(--face-edge),4px 4px 0 rgba(0,0,0,.25)}
-.center4 .trumpcard{left:24px;top:10px;transform:rotate(90deg)}
-.center4 .lbl{position:absolute;left:0;right:0;top:60px;text-align:center;font-size:.68rem;color:var(--ink-muted);line-height:1.2}
-.center4 .suitonly{position:absolute;left:8px;top:2px;width:52px;height:52px;border:1px dashed var(--line);border-radius:50%;display:grid;place-items:center;font-size:1.7rem}
+.center4{grid-column:1/3;grid-row:1;justify-self:start;align-self:start;position:relative;width:112px;height:104px;z-index:1}
+.center4 .card{position:absolute;--w:46px}
+.center4 .trumpcard{left:49px;top:0;transform:rotate(90deg);box-shadow:0 0 0 2px var(--brass),0 0 14px rgba(212,167,58,.45),0 4px 10px rgba(0,0,0,.35)}
+.center4 .trumpcard .idx{font-size:calc(var(--w)*.3)}
+.center4 .deck{left:0;top:0;box-shadow:2px 2px 0 var(--face-edge),4px 4px 0 rgba(0,0,0,.25)}
+.center4 .lbl{position:absolute;left:0;top:70px;font-size:.7rem;color:var(--ink-muted);line-height:1.25;white-space:nowrap}
+.center4 .lbl b{font-size:.82rem;color:var(--ink);font-weight:600}
+.center4 .lbl .sym{font-size:1.05rem;font-family:var(--sans)}
+.center4 .suitonly{position:absolute;left:0;top:0;width:62px;height:62px;border:2px solid var(--brass);border-radius:50%;display:grid;place-items:center;font-size:2.1rem;background:rgba(0,0,0,.18)}
 .sc.us{border-color:var(--us, #7fb069)}.sc.them{border-color:var(--them, #d0654f)}
 body.m4 .opp, body.m4 .middle, body.m4 .msg, body.m4 .me-row{display:none}
 body.m4 #app{--cw:min(22vw,100px)}
@@ -215,7 +218,7 @@ body.m4 #app{--cw:min(22vw,100px)}
 .mini:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 .joinrow{display:flex;gap:8px}
 .joinrow input{flex:1;min-width:0;min-height:50px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.15);color:var(--ink);
-  font:600 1.1rem var(--sans);letter-spacing:.2em;text-transform:uppercase;padding:0 12px}
+  font:600 1.25rem var(--sans);letter-spacing:.3em;text-align:center;padding:0 12px}
 .joinrow .btn{flex:none;width:auto;padding:0 18px}
 </style>
 </head>
@@ -920,7 +923,10 @@ function renderBoard(s, actor) {
     const d = document.createElement('div'); d.className = 'suitonly';
     d.style.color = s.trump >= 2 ? 'var(--red)' : 'var(--ink)'; d.textContent = L.SUIT_SYM[s.trump]; c4.appendChild(d);
   }
-  const lb = document.createElement('div'); lb.className = 'lbl'; lb.textContent = stockWord(s.stock.length, n);
+  // Підпис: масть козиря великим символом + скільки лишилось у колоді
+  const lb = document.createElement('div'); lb.className = 'lbl';
+  const col = s.trump >= 2 ? 'var(--red)' : 'var(--ink)';
+  lb.innerHTML = `<b>козир <span class="sym" style="color:${col}">${L.SUIT_SYM[s.trump]}</span> ${L.SUIT_NAME[s.trump]}</b><br>колода: ${stockWord(s.stock.length, n)}`;
   c4.appendChild(lb);
 }
 
@@ -1405,7 +1411,7 @@ function openMenu() {
   if (window.KOZEL_ONLINE) {
     h += `<div class="menu-lbl">З друзями онлайн</div><div class="stack">`;
     h += `<button class="btn" id="createBtn">Створити стіл</button>`;
-    h += `<div class="joinrow"><input id="codeIn" maxlength="4" placeholder="КОД" autocomplete="off" aria-label="Код столу"><button class="btn" id="joinBtn">Увійти</button></div></div>`;
+    h += `<div class="joinrow"><input id="codeIn" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="0000" autocomplete="off" aria-label="Код столу (4 цифри)"><button class="btn" id="joinBtn">Увійти</button></div></div>`;
   }
   h += RULES;
   openSheet(h);
@@ -1418,8 +1424,8 @@ function openMenu() {
   if ($('resumeBtn')) $('resumeBtn').onclick = () => { if (G.net.room && G.net.room.status === 'lobby') showLobby(G.net.room); else closeSheet(); };
   if ($('createBtn')) $('createBtn').onclick = () => { G.mode = mode; G.level = level; G.net.lobbyOpen = true; netSend({ t: 'create', n: mode, level }); };
   if ($('joinBtn')) $('joinBtn').onclick = () => {
-    const c = $('codeIn').value.trim().toUpperCase();
-    if (c.length !== 4) { toast('Код столу — 4 символи'); return; }
+    const c = $('codeIn').value.replace(/\D/g, '');
+    if (c.length !== 4) { toast('Код столу — 4 цифри'); return; }
     G.net.lobbyOpen = true; netSend({ t: 'join', code: c });
   };
 }
@@ -1431,7 +1437,7 @@ if (window.KOZEL_ONLINE) {
   // запрошення: t.me/бот/гра?startapp=КОД або ?room=КОД у браузері
   const q = new URLSearchParams(location.search).get('room');
   const sp = TG && TG.initDataUnsafe && TG.initDataUnsafe.start_param;
-  G.net.join = (sp || q || '').toUpperCase() || null;
+  G.net.join = (sp || q || '').replace(/\D/g, '') || null;
   G.net.lobbyOpen = true;
   netConnect();
 }
