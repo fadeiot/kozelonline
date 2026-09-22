@@ -161,6 +161,64 @@ button.card:disabled{cursor:default}
 .res td{padding:7px 6px;text-align:right;border-top:1px solid var(--line)}
 .res td b{font-family:var(--serif);font-size:1.15rem}
 .places{margin:8px 0 0;padding-left:1.3em;line-height:1.7}
+.pause{position:fixed;inset:0;z-index:12;background:rgba(10,6,4,.72);display:flex;align-items:center;justify-content:center;padding:20px}
+.pause[hidden]{display:none}
+.pause-card{background:var(--sheet);color:var(--ink);border-radius:16px;padding:22px 20px;max-width:420px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.5);border:1px solid var(--line)}
+.pause-card h2{font-family:var(--serif);font-weight:800;font-size:1.5rem;margin:0 0 8px}
+.pause-card p{margin:.45em 0;line-height:1.5;color:var(--ink-muted)}
+.pause-card p.who{color:var(--ink);font-size:1.05rem}
+.pause-card .stack{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.pause-card .btn{width:100%;flex:none;min-height:48px}
+.icon#musicBtn{position:relative;font-size:1.05rem}
+.icon#musicBtn.off{opacity:.45}
+.icon#musicBtn.off::after{content:"";position:absolute;left:8px;right:8px;top:50%;height:2px;background:currentColor;transform:rotate(-45deg)}
+.crowded .brand{display:none}
+.crowded .score{flex:1;justify-content:flex-start}
+.brand{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.brand small{overflow:hidden;text-overflow:ellipsis}
+.top .icon{width:36px;height:36px;flex:none}
+#chatBtn{position:relative;font-size:1rem}
+#chatBtn .badge{position:absolute;right:-5px;top:-5px;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font:600 .68rem var(--sans);display:grid;place-items:center;padding:0 4px}
+#chatBtn .badge[hidden]{display:none}
+.chat{position:fixed;inset:0;z-index:13;background:rgba(10,6,4,.55);display:flex;align-items:flex-end;justify-content:center}
+.chat[hidden]{display:none}
+.chat-card{background:var(--sheet);color:var(--ink);width:100%;max-width:520px;height:min(72vh,560px);border-radius:18px 18px 0 0;display:flex;flex-direction:column;
+  padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px))}
+.chat-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 8px;font-family:var(--serif);font-size:1.15rem}
+.chat-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding:6px 2px;overscroll-behavior:contain}
+.msg-row{display:flex;flex-direction:column;align-items:flex-start;max-width:82%}
+.msg-row.mine{align-self:flex-end;align-items:flex-end}
+.msg-row .from{font-size:.72rem;color:var(--ink-muted);margin:0 8px 2px}
+.msg-row .txt{background:var(--btn);border:1px solid var(--line);padding:8px 12px;border-radius:14px 14px 14px 4px;line-height:1.35;word-break:break-word}
+.msg-row.mine .txt{background:var(--brass);color:var(--brass-ink);border-color:transparent;border-radius:14px 14px 4px 14px}
+.chat-empty{margin:auto;color:var(--ink-muted);font-size:.9rem;text-align:center}
+.chat-quick{display:flex;gap:6px;overflow-x:auto;padding:8px 0;scrollbar-width:none}
+.chat-quick::-webkit-scrollbar{display:none}
+.chat-quick button{flex:none;border:1px solid var(--line);background:var(--btn);border-radius:16px;padding:7px 12px;font-size:.85rem;cursor:pointer;white-space:nowrap}
+.chat-input{display:flex;gap:8px}
+.chat-input input{flex:1;min-width:0;min-height:48px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.12);color:var(--ink);font:1rem var(--sans);padding:0 12px}
+.chat-input .btn{flex:none;width:52px;padding:0;font-size:1.1rem}
+.bubble{position:absolute;top:2px;z-index:3;max-width:150px;width:max-content;background:var(--ink);color:var(--wood-2);padding:6px 10px;border-radius:12px;font-size:.8rem;line-height:1.3;
+  box-shadow:0 6px 16px rgba(0,0,0,.35);animation:bub .25s ease-out;word-break:break-word;text-align:left;white-space:normal}
+.seat4.left .bubble{left:calc(100% + 4px)}
+.seat4.right .bubble{right:calc(100% + 4px)}
+.seat4.top .bubble{left:calc(50% + 32px)}
+@keyframes bub{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.bubble{animation:none}}
+.clock{grid-column:3;grid-row:1;justify-self:end;align-self:start;font:600 .8rem var(--sans);color:var(--ink-muted);font-variant-numeric:tabular-nums;white-space:nowrap;padding-top:4px}
+.turnbar{position:relative;height:22px;border-radius:11px;background:rgba(0,0,0,.22);overflow:hidden;visibility:hidden;flex:none}
+.turnbar.on{visibility:visible}
+.turnbar i{position:absolute;left:0;top:0;bottom:0;width:var(--p,100%);background:var(--brass);opacity:.85;transition:width .25s linear}
+.turnbar span{position:relative;display:block;text-align:center;font:600 .78rem/22px var(--sans);color:var(--ink);font-variant-numeric:tabular-nums}
+.turnbar.low i{background:var(--red)}
+.tl{font:600 .75rem var(--sans);color:var(--brass);font-variant-numeric:tabular-nums}
+.tl.low{color:var(--red)}
+.ava img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover}
+.ava .cnt4{z-index:1}
+.mini-ava{position:relative;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.25);font:700 .8rem var(--serif);
+  vertical-align:middle;margin-right:8px;overflow:hidden;flex:none;color:var(--ink)}
+.mini-ava img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mini-ava.sm{width:20px;height:20px;font-size:.62rem;margin-right:5px}
 .btn.danger{background:var(--red);color:#fff;border-color:transparent}
 .menu-lbl{font-size:.82rem;color:var(--ink-muted);margin:12px 0 -2px}
 
@@ -229,6 +287,8 @@ body.m4 #app{--cw:min(22vw,100px)}
     <div class="brand">Боярський козел<small id="levelLbl"></small></div>
     <div class="score" id="score" aria-label="Очки"></div>
     <div class="mult" id="mult" hidden>×2</div>
+    <button class="icon" id="chatBtn" aria-label="Чат" hidden>💬<span class="badge" id="chatBadge" hidden></span></button>
+    <button class="icon" id="musicBtn" aria-label="Фонова музика" aria-pressed="true">♫</button>
     <button class="icon" id="menuBtn" aria-label="Меню">☰</button>
   </header>
   <section class="opp" id="opp"></section>
@@ -238,6 +298,7 @@ body.m4 #app{--cw:min(22vw,100px)}
   </section>
   <section class="board4" id="board4" hidden>
     <div class="center4" id="center4"></div>
+    <div class="clock" id="clock" aria-label="Час гри"></div>
     <div class="seat4 top" id="seatT"></div>
     <div class="seat4 left" id="seatL"></div>
     <div class="seat4 right" id="seatR"></div>
@@ -251,10 +312,20 @@ body.m4 #app{--cw:min(22vw,100px)}
   <div class="msg" id="msg" role="status"></div>
   <div class="me-row"><div></div><div class="pilecount" id="trumpInfo"></div></div>
   <section class="hand" id="myHand" aria-label="Ваші карти"></section>
+  <div class="turnbar" id="turnbar" aria-live="off"><i></i><span></span></div>
   <div class="actions" id="actions"></div>
 </div>
 <div class="sheet" id="sheet" hidden><div class="sheet-card" id="sheetBody"></div></div>
 <div class="toast" id="toast" role="alert" hidden></div>
+<div class="pause" id="pause" role="alertdialog" aria-live="assertive" hidden></div>
+<div class="chat" id="chat" hidden>
+  <div class="chat-card" role="dialog" aria-label="Чат столу">
+    <div class="chat-head"><b id="chatTitle">Чат столу</b><button class="icon" id="chatClose" aria-label="Закрити чат">✕</button></div>
+    <div class="chat-list" id="chatList" aria-live="polite"></div>
+    <div class="chat-quick" id="chatQuick"></div>
+    <div class="chat-input"><input id="chatIn" maxlength="200" placeholder="Повідомлення…" autocomplete="off" enterkeyhint="send" aria-label="Повідомлення"><button class="btn primary" id="chatSend" aria-label="Надіслати">➤</button></div>
+  </div>
+</div>
 <script>
 // ===== Боярський козел: рушій гри (2 або 3 гравці) =====
 // Карта = число 0..35: масть = c/9|0, ранг = c%9
@@ -698,6 +769,8 @@ const LEVELS = {
   easy: { mc: 0, noise: 6 },
   medium: { mc: 60, noise: 3 },
   hard: { mc: 400, noise: 2, timeMs: 700 },
+  // «Дядя Слава»: сильний плюс — у 2,5 раза більше варіантів розкладу на кожен хід
+  slava: { mc: 1000, noise: 2, timeMs: 1600 },
 };
 
 function chooseAction(s, level, rng) {
@@ -714,7 +787,7 @@ function chooseAction(s, level, rng) {
     for (let i = 0; i < acts.length; i++) {
       const sim = E.cloneState(det);
       E.applyAction(sim, acts[i]);
-      rollout(sim, E.mulberry32(seed), 1.5);
+      rollout(sim, E.mulberry32(seed), cfg.rnoise || 1.5);
       sums[i] += utility(sim, p);
     }
     if (cfg.timeMs && Date.now() - t0 > cfg.timeMs && it >= 60) break;
@@ -731,7 +804,9 @@ if (typeof module !== 'undefined') module.exports = AI;
 <script>
 const $ = id => document.getElementById(id);
 const L = Engine;
-const LEVEL_NAME = { easy: 'Легкий', medium: 'Середній', hard: 'Сильний' };
+const LEVEL_NAME = { medium: 'Середній', hard: 'Сильний', slava: 'Дядя Слава' };
+const LEVELS_UI = [['medium', 'Середній'], ['hard', 'Сильний'], ['slava', 'Дядя Слава']];
+const levelText = k => k === 'slava' ? 'Дядя Слава' : (LEVEL_NAME[k] || 'Середній').toLowerCase();
 const G = { mode: 2, level: 'hard', ser: null, deal: null,
   rng: L.mulberry32((Date.now() ^ (Math.random() * 1e9)) >>> 0),
   sel: new Set(), busy: false, pending: '', notes: [], prompt: '', started: false, timer: null, chips: {}, fly: -1,
@@ -792,6 +867,7 @@ function cardEl(c, opts = {}) {
 function renderCore() {
   const s = G.deal, ser = G.ser, n = n_();
   const sc = $('score'); sc.innerHTML = '';
+  document.body.classList.toggle('crowded', !!G.net.room && n === 3);
   const chipNames = n === 4 ? ['Ми', 'Вони'] : [...Array(n).keys()].map(i => { const t = nm(i); return t.length > 7 ? t.slice(0, 6) + '…' : t; });
   chipNames.forEach((t, i) => {
     const d = document.createElement('div'); d.className = 'sc' + (n === 4 ? (i === 0 ? ' us' : ' them') : '');
@@ -800,7 +876,7 @@ function renderCore() {
   });
   $('mult').hidden = !ser || ser.mult === 1;
   $('mult').textContent = '×' + (ser ? ser.mult : 1);
-  $('levelLbl').textContent = G.net.room ? `${MODE_NAME[n]}, стіл ${G.net.room.code}` : (n === 2 ? 'Бот: ' : MODE_NAME[n] + ', боти: ') + LEVEL_NAME[G.level].toLowerCase();
+  $('levelLbl').textContent = G.net.room ? `${MODE_NAME[n]}, стіл ${G.net.room.code}` : (n === 2 ? 'Бот: ' : MODE_NAME[n] + ', боти: ') + levelText(G.level);
   $('msg').textContent = [G.pending, ...G.notes, G.prompt].filter(Boolean).join(' ');
   document.body.classList.add('m4');
   $('board4').hidden = false;
@@ -877,6 +953,11 @@ const POS = {
   3: [{ at: 'B', fly: 0 }, { at: 'L', fly: 1 }, { at: 'R', fly: 3 }],
   4: [{ at: 'B', fly: 0 }, { at: 'L', fly: 1 }, { at: 'T', fly: 2 }, { at: 'R', fly: 3 }],
 };
+// Фото профілю Telegram (онлайн); якщо не завантажилось — лишається літера
+function avaImg(p) {
+  const url = G.net.room && G.net.room.avas ? G.net.room.avas[p] : null;
+  return url ? `<img src="${url}" alt="" loading="lazy" onerror="this.remove()">` : '';
+}
 const LETTER = { 'Бот': 'Б', 'Кум': 'К', 'Сват': 'С', 'Брат': 'Б' };
 function renderBoard(s, actor) {
   const n = s.n, pos = POS[n];
@@ -890,8 +971,11 @@ function renderBoard(s, actor) {
     const nmp = esc(nm(p)), letter = LETTER[nm(p)] || esc((nm(p)[0] || '?').toUpperCase());
     const off = G.net.room && G.net.room.online && !G.net.room.online[p];
     const ch = off ? 'нема зв’язку' : chip;
-    seat.innerHTML = `<div class="ava" aria-label="${nmp}">${letter}<span class="cnt4">${s.hands[p].length}</span></div>` +
+    seat.innerHTML = `<div class="ava" aria-label="${nmp}">${letter}${avaImg(p)}<span class="cnt4">${s.hands[p].length}</span></div>` +
       `<div class="nm4">${nmp.length > 12 ? nmp.slice(0, 11) + '…' : nmp}${isMate(p) ? ' (партнер)' : ''}</div><div class="chip${ch === 'взятка' ? ' win' : ''}${ch ? '' : ' hide'}">${ch || '·'}</div>`;
+    if (actor === p && turnRemainMs() !== null) seat.insertAdjacentHTML('beforeend', '<div class="tl" data-tl></div>');
+    const bb = Chat.bubbles[p];
+    if (bb && bb.until > Date.now()) seat.insertAdjacentHTML('beforeend', `<div class="bubble">${esc(bb.text)}</div>`);
   }
   // зіграні карти лежать перед тим, хто їх поклав
   const byP = Array.from({ length: n }, () => []);
@@ -1040,9 +1124,11 @@ function collectTo(w) {
 function later(fn, ms) { clearTimeout(G.timer); G.timer = setTimeout(fn, ms); }
 function act(a) {
   if (G.busy || L.toAct(G.deal) !== 0) return;
+  G.turnLeft = null;
   haptic.act();
   if (G.net.room) { // онлайн: хід перевіряє сервер
     if (G.net.sent) return;
+    if ((G.net.room.away || []).length) { renderPause(G.net.room); toast('Гру зупинено: чекаємо, поки гравець повернеться'); return; }
     G.net.sent = true; G.sel.clear();
     netSend({ t: 'act', a: { type: a.type, cards: a.cards } });
     render(); return;
@@ -1115,10 +1201,11 @@ function step() {
   if (p !== 0) {
     G.busy = true; G.prompt = ''; render();
     later(() => { const a = AI.chooseAction(s, G.level, G.rng); G.busy = false; perform(p, a); }, 550);
-  } else { G.busy = false; promptMe(); render(); }
+  } else { G.busy = false; G.turnLeft = TURN_MS; G.warned = false; promptMe(); render(); }
 }
 
 function startSeries() {
+  G.gameStart = Date.now(); G.turnLeft = null;
   if (G.net.room) { netSend({ t: 'leave' }); G.net.room = null; }
   tgGuard(true);
   try { localStorage.setItem('kozel-level', G.level); localStorage.setItem('kozel-mode', G.mode); } catch (e) {}
@@ -1127,7 +1214,7 @@ function startSeries() {
 }
 function startDeal(first) {
   const s = L.newDeal(G.rng, G.ser.n, first, G.ser.nextStarter);
-  G.deal = s; G.sel.clear(); G.notes = []; G.prompt = ''; G.chips = {}; G.fly = -1;
+  G.deal = s; G.sel.clear(); G.notes = []; G.prompt = ''; G.chips = {}; G.fly = -1; G.turnLeft = null;
   G.chips = { [s.attacker]: 'перший' };
   const who = s.attacker === 0 ? 'Ви ходите першим' : `Першим ходить ${nm(s.attacker).toLowerCase() === 'бот' ? 'бот' : nm(s.attacker)}`;
   let t = `Роздача ${G.ser.dealNo + 1}. Козир ${L.SUIT_SYM[s.trump]} ${L.SUIT_NAME[s.trump]}. `;
@@ -1277,12 +1364,20 @@ function netSend(m) {
   else { G.net.queue.push(m); netConnect(); }
 }
 function netOnMessage(m) {
-  if (m.t === 'welcome') { G.net.me = m.me; return; }
+  if (m.t === 'welcome') {
+    G.net.me = m.me; G.net.lastRoom = m.lastRoom || null;
+    if (G.sheetKind === 'menu' && !G.net.room) openMenu();
+    return;
+  }
   if (m.t === 'error') { G.net.sent = false; toast(m.msg); render(); return; }
   if (m.t === 'left') {
-    G.net.room = null; G.deal = null; G.ser = null; G.chips = {}; tgGuard(false);
+    G.net.lastRoom = m.lastRoom || null; G.net.away = [];
+    Chat.list = []; Chat.unread = 0; chatClose(); chatPaint();
+    G.net.room = null; G.deal = null; G.ser = null; G.chips = {}; tgGuard(false); renderPause(null);
     render(); openMenu(); return;
   }
+  if (m.t === 'chatHistory') { Chat.list = m.list; Chat.unread = 0; chatPaint(); return; }
+  if (m.t === 'chat') { chatIncoming(m.m); return; }
   if (m.t === 'room') netApply(m);
 }
 function applyEv(ev, v) {
@@ -1294,6 +1389,10 @@ function applyEv(ev, v) {
     case 'discard': G.chips[ev.p] = 'скинув'; break;
     case 'collected': G.chips = {}; break;
   }
+  if (ev.auto) {
+    G.chips[ev.p] = '⏰ час вийшов';
+    if (ev.p === 0) { toast('Час на хід вийшов — за вас походив бот'); haptic.bad(); }
+  }
   if (v.deal && v.deal.phase === 'resolve') {
     const w = v.deal.winner;
     G.chips = { [w]: 'взятка' };
@@ -1304,7 +1403,17 @@ function applyEv(ev, v) {
 }
 function netApply(v) {
   const N = G.net;
-  N.room = v; N.names = v.names.map((x, i) => i === 0 ? 'Ви' : x); N.sent = false;
+  N.room = v; N.names = v.names.map((x, i) => i === 0 ? 'Ви' : x); N.sent = false; N.lastRoom = null;
+  N.offset = (v.now || Date.now()) - Date.now();
+  if (v.deadline !== N.deadline) { N.deadline = v.deadline || null; G.warned = false; }
+  chatPaint();
+  // хто вийшов / повернувся — сповіщаємо всіх
+  const was = new Set((N.away || []).map(a => a.name)), now = new Set((v.away || []).map(a => a.name));
+  for (const a of v.away || []) if (!was.has(a.name)) { toast(`Гравець ${a.name} вийшов з гри. Гру зупинено.`); haptic.bad(); }
+  for (const nmx of was) if (!now.has(nmx) && v.seats.some(x => x && !x.bot && x.name === nmx)) toast(`Гравець ${nmx} повернувся до гри`);
+  if (now.size !== was.size || [...now].some(x => !was.has(x))) N.pauseHidden = false;
+  N.away = v.away || [];
+  renderPause(v);
   clearTimeout(G.timer); G.started = false;
   if (v.status === 'lobby') {
     G.deal = null; G.ser = null; G.chips = {}; N.shown = null;
@@ -1328,10 +1437,35 @@ function netApply(v) {
     }
   } else if (G.sheetKind === 'dealEnd') closeSheet();
 }
+// Пауза онлайн-гри: хтось вийшов — показуємо всім, хто саме, і чекаємо
+function renderPause(v) {
+  const el = $('pause');
+  const away = v && v.status !== 'lobby' ? (v.away || []) : [];
+  if (!away.length || G.net.pauseHidden) { el.hidden = true; return; }
+  let h = `<h2>Гру зупинено</h2>`;
+  h += away.map(a => `<p class="who">Гравець <b>${esc(a.name)}</b> вийшов з гри.</p>`).join('');
+  h += `<p>Гра продовжиться, щойно гравець повернеться за посиланням-запрошенням або кнопкою «Повернутися до гри» в меню.</p><div class="stack">`;
+  h += `<button class="btn" id="pauseInvite">Надіслати запрошення ще раз</button>`;
+  if (v.host) h += away.map(a => `<button class="btn" data-repl="${a.i}">Посадити бота замість: ${esc(a.name)}</button>`).join('');
+  h += `<button class="btn" id="pauseMenu">Відкрити меню</button></div>`;
+  el.innerHTML = `<div class="pause-card">${h}</div>`;
+  el.hidden = false;
+  $('pauseInvite').onclick = () => invite(v);
+  $('pauseMenu').onclick = () => { G.net.pauseHidden = true; el.hidden = true; openMenu(); };
+  el.querySelectorAll('[data-repl]').forEach(b => b.onclick = () => {
+    // друге натискання підтверджує, щоб не замінити гравця випадково
+    if (!b.dataset.sure) {
+      b.dataset.sure = '1'; b.classList.add('danger'); b.textContent = 'Точно? Натисніть ще раз';
+      setTimeout(() => { if (b.isConnected) { delete b.dataset.sure; b.classList.remove('danger'); renderPause(G.net.room); } }, 3500);
+      return;
+    }
+    netSend({ t: 'replace', i: +b.dataset.repl });
+  });
+}
 function showLobby(v) {
   G.net.lobbyOpen = true;
   const n = v.n;
-  let h = `<h2>Стіл ${v.code}</h2><p>${MODE_NAME[n]}. Сила ботів: ${LEVEL_NAME[v.level].toLowerCase()}.</p><div class="seats">`;
+  let h = `<h2>Стіл ${v.code}</h2><p>${MODE_NAME[n]}. Сила ботів: ${levelText(v.level)}.</p><div class="seats">`;
   v.seats.forEach((x, i) => {
     const place = `місце ${i + 1}` + (n === 4 ? `<br>команда ${i % 2 === 0 ? 'А' : 'Б'}` : '');
     let who, right = '';
@@ -1340,7 +1474,8 @@ function showLobby(v) {
       if (v.host) right += `<button class="mini" data-bot="${i}">+ бот</button>`;
       right += `<button class="mini" data-seat="${i}">Сісти</button>`;
     } else {
-      who = esc(x.name) + (x.me ? ' (ви)' : '') + (x.bot ? ' (бот)' : '') + (x.host ? ' ★' : '');
+      who = `<span class="mini-ava">${esc((x.name[0] || '?').toUpperCase())}${x.ava ? `<img src="${x.ava}" alt="" onerror="this.remove()">` : ''}</span>` +
+        esc(x.name) + (x.me ? ' (ви)' : '') + (x.bot ? ' (бот)' : '') + (x.host ? ' ★' : '');
       if (x.bot && v.host) right = `<button class="mini" data-unbot="${i}">Прибрати</button>`;
     }
     h += `<div class="seatrow${x && x.me ? ' me' : ''}"><span class="no">${place}</span><span class="who">${who}</span>${right}</div>`;
@@ -1349,7 +1484,7 @@ function showLobby(v) {
   if (n === 4) h += `<p>Партнери сидять навпроти: команда А — місця 1 і 3, команда Б — місця 2 і 4.</p>`;
   if (v.host) {
     h += `<div class="menu-lbl">Сила ботів</div><div class="stack"><div class="row">` +
-      [['easy', 'Легкий'], ['medium', 'Середній'], ['hard', 'Сильний']].map(([k, t]) =>
+      LEVELS_UI.map(([k, t]) =>
         `<button class="btn${k === v.level ? ' primary' : ''}" data-nlv="${k}">${t}</button>`).join('') + `</div></div>`;
   }
   h += `<div class="stack"><button class="btn" id="inviteBtn">Запросити друзів</button>`;
@@ -1378,7 +1513,7 @@ function invite(v) {
 function confirmExit(back) {
   const on = !!G.net.room;
   let h = `<h2>Вийти в головне меню?</h2>`;
-  h += on ? `<p>Ви вийдете з-за столу ${G.net.room.code}. Ваше місце до кінця партії займе бот.</p>`
+  h += on ? `<p>Гру за столом ${G.net.room.code} буде зупинено, доки ви не повернетесь. Повернутися можна кнопкою «Повернутися до гри» в меню або за посиланням-запрошенням.</p>`
           : `<p>Поточну партію буде завершено, рахунок не збережеться.</p>`;
   h += `<div class="stack"><button class="btn danger" id="exitYes">Так, вийти</button><button class="btn primary" id="exitNo">Ні, грати далі</button></div>`;
   openSheet(h, 'confirm');
@@ -1391,7 +1526,7 @@ function confirmExit(back) {
     haptic.act();
     if (on) { G.net.lobbyOpen = false; netSend({ t: 'leave' }); return; }
     clearTimeout(G.timer);
-    G.started = false; G.deal = null; G.ser = null; G.chips = {}; G.sel.clear();
+    G.started = false; G.deal = null; G.ser = null; G.chips = {}; G.sel.clear(); G.turnLeft = null; G.gameStart = null;
     tgGuard(false); render(); openMenu();
   };
 }
@@ -1431,9 +1566,10 @@ function openMenu() {
     `<button class="btn${v === cur ? ' primary' : ''}" data-${key}="${v}" aria-pressed="${v === cur}">${t}</button>`).join('') + `</div>`;
   let h = `<h2>Боярський козел</h2>`;
   h += `<div class="menu-lbl">Гравці</div><div class="stack">` + btns('md', [[2, 'На двох'], [3, 'На трьох'], [4, 'Пара на пару']], mode) + `</div>`;
-  h += `<div class="menu-lbl">Сила ботів</div><div class="stack">` + btns('lv', [['easy', 'Легкий'], ['medium', 'Середній'], ['hard', 'Сильний']], level) + `</div>`;
+  h += `<div class="menu-lbl">Сила ботів</div><div class="stack">` + btns('lv', LEVELS_UI, level) + `</div>`;
   if (G.net.room) h += `<div class="stack"><button class="btn primary" id="resumeBtn">Повернутися за стіл ${G.net.room.code}</button></div>`;
-  h += `<div class="stack"><button class="btn${G.net.room ? '' : ' primary'}" id="startBtn">Грати з ботами</button>`;
+  else if (G.net.lastRoom) h += `<div class="stack"><button class="btn primary" id="backToGame">Повернутися до гри (стіл ${G.net.lastRoom.code})</button></div>`;
+  h += `<div class="stack"><button class="btn${G.net.room || G.net.lastRoom ? '' : ' primary'}" id="startBtn">Грати з ботами</button>`;
   if (G.started && !G.net.room && !G.ser.over) h += `<button class="btn" id="resumeBtn">Продовжити поточну</button>`;
   h += `</div>`;
   if (window.KOZEL_ONLINE) {
@@ -1441,6 +1577,7 @@ function openMenu() {
     h += `<button class="btn" id="createBtn">Створити стіл</button>`;
     h += `<div class="joinrow"><input id="codeIn" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="0000" autocomplete="off" aria-label="Код столу (4 цифри)"><button class="btn" id="joinBtn">Увійти</button></div></div>`;
   }
+  h += `<div class="stack"><button class="btn" id="musicMenuBtn">${Music.on ? '♫ Музика: увімкнена' : '♫ Музика: вимкнена'}</button></div>`;
   h += RULES;
   openSheet(h);
   const wire = (key, set) => document.querySelectorAll(`[data-${key}]`).forEach(b => b.onclick = () => {
@@ -1450,6 +1587,8 @@ function openMenu() {
   wire('md', v => mode = +v); wire('lv', v => level = v);
   $('startBtn').onclick = () => { G.mode = mode; G.level = level; startSeries(); };
   if ($('resumeBtn')) $('resumeBtn').onclick = () => { if (G.net.room && G.net.room.status === 'lobby') showLobby(G.net.room); else closeSheet(); };
+  $('musicMenuBtn').onclick = () => { Music.toggle(); $('musicMenuBtn').textContent = Music.on ? '♫ Музика: увімкнена' : '♫ Музика: вимкнена'; };
+  if ($('backToGame')) $('backToGame').onclick = () => { G.net.lobbyOpen = true; netSend({ t: 'join', code: G.net.lastRoom.code }); };
   if ($('createBtn')) $('createBtn').onclick = () => { G.mode = mode; G.level = level; G.net.lobbyOpen = true; netSend({ t: 'create', n: mode, level }); };
   if ($('joinBtn')) $('joinBtn').onclick = () => {
     const c = $('codeIn').value.replace(/\D/g, '');
@@ -1458,6 +1597,143 @@ function openMenu() {
   };
 }
 $('menuBtn').onclick = openMenu;
+// ---------- Таймери: загальний час гри і 1 хвилина на хід ----------
+const TURN_MS = 60000;
+function turnRemainMs() {
+  if (G.net.room) return G.net.deadline ? G.net.deadline - (Date.now() + (G.net.offset || 0)) : null;
+  return G.deal && G.turnLeft != null ? G.turnLeft : null;
+}
+const fmtTime = ms => {
+  const t = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, sec = t % 60;
+  return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(sec).padStart(2, '0');
+};
+function autoMoveMe() {
+  // час вийшов — за гравця ходить бот (середнього рівня)
+  if (!G.deal || G.busy || L.toAct(G.deal) !== 0) return;
+  const a = AI.chooseAction(G.deal, 'medium', G.rng);
+  toast('Час на хід вийшов — за вас походив бот'); haptic.bad();
+  G.chips[0] = '⏰';
+  G.sel.clear(); perform(0, a);
+}
+function tick() {
+  const now = Date.now(), dt = now - (tick.last || now); tick.last = now;
+  // офлайн: відлік іде, лише коли гравець бачить стіл (не в меню)
+  if (!G.net.room && G.deal && G.turnLeft != null && !G.busy && L.toAct(G.deal) === 0 && $('sheet').hidden) {
+    G.turnLeft -= dt;
+    if (G.turnLeft <= 0) { G.turnLeft = null; autoMoveMe(); }
+  }
+  const start = G.net.room ? (G.net.room.startedAt ? G.net.room.startedAt - (G.net.offset || 0) : null) : G.gameStart;
+  $('clock').textContent = start && G.deal ? '⏱ ' + fmtTime(now - start) : '';
+  const rem = turnRemainMs(), actor = G.deal ? L.toAct(G.deal) : -1;
+  const bar = $('turnbar'), mine = rem !== null && actor === 0 && !G.net.sent;
+  bar.classList.toggle('on', mine);
+  if (mine) {
+    const r = Math.max(0, rem);
+    bar.style.setProperty('--p', (100 * r / TURN_MS).toFixed(1) + '%');
+    bar.querySelector('span').textContent = 'Ваш хід: ' + Math.ceil(r / 1000) + ' с';
+    bar.classList.toggle('low', r <= 10000);
+    if (r <= 10000 && !G.warned) { G.warned = true; haptic.act(); }
+  }
+  document.querySelectorAll('[data-tl]').forEach(el => {
+    el.textContent = rem !== null ? Math.max(0, Math.ceil(rem / 1000)) + ' с' : '';
+    el.classList.toggle('low', rem !== null && rem <= 10000);
+  });
+}
+setInterval(tick, 250);
+// ---------- Чат між онлайн-гравцями ----------
+const Chat = { list: [], unread: 0, open: false, bubbles: {} };
+const QUICK = ['Ходи вже! ⏳', 'Гарний хід 👍', 'Ех… 😅', 'Ну ти й козел 🐐', 'Везе ж 🍀', 'Дякую за гру 🤝'];
+function chatPaint() {
+  const inRoom = !!G.net.room;
+  $('chatBtn').hidden = !inRoom;
+  const bd = $('chatBadge');
+  bd.hidden = !Chat.unread; bd.textContent = Chat.unread > 9 ? '9+' : Chat.unread;
+  if (inRoom) $('chatTitle').textContent = `Чат столу ${G.net.room.code}`;
+  if (!inRoom && Chat.open) chatClose();
+  if (Chat.open) chatRenderList();
+}
+function chatRenderList() {
+  const box = $('chatList');
+  if (!Chat.list.length) { box.innerHTML = '<div class="chat-empty">Тут поки тихо. Напишіть щось або виберіть готову фразу нижче.</div>'; return; }
+  box.innerHTML = Chat.list.map(m =>
+    `<div class="msg-row${m.mine ? ' mine' : ''}">${m.mine ? '' : `<span class="from">${m.p > 0 ? `<span class="mini-ava sm">${esc((m.name[0] || '?').toUpperCase())}${avaImg(m.p)}</span>` : ''}${esc(m.name)}</span>`}<div class="txt">${esc(m.text)}</div></div>`).join('');
+  box.scrollTop = box.scrollHeight;
+}
+function chatOpen() {
+  Chat.open = true; Chat.unread = 0;
+  $('chat').hidden = false; chatRenderList(); chatPaint();
+}
+function chatClose() { Chat.open = false; $('chat').hidden = true; $('chatIn').blur(); }
+function chatSend(text) {
+  text = (text || '').trim();
+  if (!text || !G.net.room) return;
+  netSend({ t: 'chat', text });
+  haptic.tap();
+}
+function chatIncoming(m) {
+  Chat.list.push(m); if (Chat.list.length > 60) Chat.list.shift();
+  if (!m.mine) {
+    if (!Chat.open) { Chat.unread++; haptic.tap(); }
+    // коротко показуємо повідомлення біля аватара гравця
+    if (m.p > 0) {
+      Chat.bubbles[m.p] = { text: m.text.length > 60 ? m.text.slice(0, 58) + '…' : m.text, until: Date.now() + 4500 };
+      render(); setTimeout(render, 4600);
+    }
+  }
+  chatPaint();
+}
+$('chatQuick').innerHTML = QUICK.map((q, i) => `<button data-q="${i}">${q}</button>`).join('');
+$('chatQuick').querySelectorAll('[data-q]').forEach(b => b.onclick = () => chatSend(QUICK[+b.dataset.q]));
+$('chatBtn').onclick = e => { e.stopPropagation(); chatOpen(); };
+$('chatClose').onclick = chatClose;
+$('chat').onclick = e => { if (e.target === $('chat')) chatClose(); };
+$('chatSend').onclick = () => { chatSend($('chatIn').value); $('chatIn').value = ''; };
+$('chatIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('chatSend').click(); } });
+// ---------- Фонова музика ----------
+// Трек уже записано тихо (≈ −30 LUFS), тому гучність не залежить від того, чи вміє пристрій змінювати volume (iOS не вміє).
+const MUSIC_SRC = 'music.m4a';
+const Music = {
+  el: null, started: false,
+  on: (() => { try { return localStorage.getItem('kozel-music') !== '0'; } catch (e) { return true; } })(),
+  ensure() {
+    if (this.el) return this.el;
+    const a = new Audio(MUSIC_SRC);
+    a.loop = true; a.preload = 'auto'; a.setAttribute('playsinline', '');
+    this.el = a; return a;
+  },
+  fadeIn() {
+    const a = this.el; if (!a) return;
+    // плавний початок (там, де браузер дозволяє міняти гучність)
+    try { a.volume = 0; let v = 0; clearInterval(this.fi); this.fi = setInterval(() => { v = Math.min(1, v + 0.05); a.volume = v; if (v >= 1) clearInterval(this.fi); }, 80); } catch (e) {}
+  },
+  play() {
+    if (!this.on || document.hidden) return;
+    const a = this.ensure();
+    if (!a.paused) return;
+    const p = a.play();
+    if (p && p.then) p.then(() => { this.started = true; this.fadeIn(); }).catch(() => {});
+  },
+  pause() { if (this.el) this.el.pause(); },
+  toggle() {
+    this.on = !this.on;
+    try { localStorage.setItem('kozel-music', this.on ? '1' : '0'); } catch (e) {}
+    if (this.on) this.play(); else this.pause();
+    this.paint();
+  },
+  paint() {
+    const b = $('musicBtn'); if (!b) return;
+    b.classList.toggle('off', !this.on); b.setAttribute('aria-pressed', this.on);
+    b.title = this.on ? 'Вимкнути музику' : 'Увімкнути музику';
+  },
+};
+$('musicBtn').onclick = e => { e.stopPropagation(); Music.toggle(); };
+Music.paint();
+// Браузери дозволяють звук лише після першого дотику користувача
+const firstTouch = () => { Music.play(); if (Music.started) { document.removeEventListener('pointerdown', firstTouch, true); document.removeEventListener('keydown', firstTouch, true); } };
+document.addEventListener('pointerdown', firstTouch, true);
+document.addEventListener('keydown', firstTouch, true);
+// Згорнули Telegram чи перейшли в іншу вкладку — музика на паузі
+document.addEventListener('visibilitychange', () => { if (document.hidden) Music.pause(); else if (Music.started) Music.play(); });
 G.prompt = 'Оберіть гру в меню.';
 render();
 openMenu();

@@ -128,6 +128,8 @@ const LEVELS = {
   easy: { mc: 0, noise: 6 },
   medium: { mc: 60, noise: 3 },
   hard: { mc: 400, noise: 2, timeMs: 700 },
+  // «Дядя Слава»: сильний плюс — у 2,5 раза більше варіантів розкладу на кожен хід
+  slava: { mc: 1000, noise: 2, timeMs: 1600 },
 };
 
 function chooseAction(s, level, rng) {
@@ -144,7 +146,7 @@ function chooseAction(s, level, rng) {
     for (let i = 0; i < acts.length; i++) {
       const sim = E.cloneState(det);
       E.applyAction(sim, acts[i]);
-      rollout(sim, E.mulberry32(seed), 1.5);
+      rollout(sim, E.mulberry32(seed), cfg.rnoise || 1.5);
       sums[i] += utility(sim, p);
     }
     if (cfg.timeMs && Date.now() - t0 > cfg.timeMs && it >= 60) break;
