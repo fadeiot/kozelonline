@@ -275,8 +275,8 @@ function dealResult(s, mult) {
 }
 
 // ---------- Серія ----------
-function newSeries(n) {
-  return { n, penalties: new Array(teamCount(n)).fill(0), mult: 1, dealNo: 0, nextStarter: null,
+function newSeries(n, goal) {
+  return { n, goal: goal === 6 ? 6 : 12, penalties: new Array(teamCount(n)).fill(0), mult: 1, dealNo: 0, nextStarter: null,
     over: false, loser: -1, losers: [], milk: false, deals: [] };
 }
 function applyDealToSeries(ser, res, lastTrick) {
@@ -291,10 +291,10 @@ function applyDealToSeries(ser, res, lastTrick) {
   const withMax = P.map((x, i) => x === max ? i : -1).filter(i => i >= 0);
   if (ser.n === 2 || ser.n === 4) {
     if ((P[0] === 6 && P[1] === 0) || (P[1] === 6 && P[0] === 0)) { ser.over = true; ser.milk = true; }
-    else if (max >= 12) ser.over = true;
+    else if (max >= ser.goal) ser.over = true;
   } else {
     if (max >= 6 && min === 0) { ser.over = true; ser.milk = true; }
-    else if (max >= 12) ser.over = true;
+    else if (max >= ser.goal) ser.over = true;
   }
   if (ser.over) { ser.losers = withMax; ser.loser = withMax[0]; }
   return rec;

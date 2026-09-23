@@ -173,9 +173,9 @@ function botName(room) {
 }
 const humans = room => room.seats.filter(x => x && x.type === 'human');
 
-function createRoom(user, n, level) {
+function createRoom(user, n, level, goal) {
   const room = {
-    code: newCode(), n, level: AI.LEVELS[level] ? level : 'medium', hostId: user.id,
+    code: newCode(), n, level: AI.LEVELS[level] ? level : 'medium', goal: goal === 6 ? 6 : 12, hostId: user.id,
     seats: new Array(n).fill(null), status: 'lobby', ser: null, deal: null,
     ev: null, evSeq: 0, result: null, rec: null, ready: new Set(), timer: null, turnTimer: null, emptySince: null,
     chat: [], chatSeq: 0, duo: new Set(),
@@ -232,7 +232,7 @@ function viewFor(room, id) {
   const tArr = a => swap ? [a[1], a[0]] : a;
   const tIdx = t => swap ? 1 - t : t;
   const v = {
-    t: 'room', code: room.code, n, status: room.status, level: room.level,
+    t: 'room', code: room.code, n, status: room.status, level: room.level, goal: room.goal || 12,
     host: room.hostId === id, mySeat: s,
     seats: room.seats.map((x, i) => x && { name: x.name, ava: avatarOf(x), bot: x.type === 'bot', connected: x.type === 'bot' || x.connected, me: x.type === 'human' && x.id === id, host: x.type === 'human' && x.id === room.hostId }),
     names: room.seats.map((_, r) => { const x = room.seats[unrot(r)]; return x ? x.name : ''; }),
@@ -250,7 +250,7 @@ function viewFor(room, id) {
     const S = room.ser;
     const isTeam = n === 4;
     v.ser = {
-      n, mult: S.mult, dealNo: S.dealNo, over: S.over, milk: S.milk,
+      n, goal: S.goal, mult: S.mult, dealNo: S.dealNo, over: S.over, milk: S.milk,
       penalties: isTeam ? tArr(S.penalties) : rotArr(S.penalties),
       losers: isTeam ? S.losers.map(tIdx) : S.losers.map(rot),
       loser: S.loser < 0 ? -1 : (isTeam ? tIdx(S.loser) : rot(S.loser)),
@@ -318,7 +318,7 @@ function postChat(room, user, text) {
 function canDuo(room) {
   if (room.n !== 3 || room.status !== 'over' || !room.ser || room.ser.losers.length !== 1) return false;
   const goat = room.ser.losers[0];
-  return room.ser.penalties.every((v, i) => i === goat || v < 12);
+  return room.ser.penalties.every((v, i) => i === goat || v < room.ser.goal);
 }
 function send(ws, msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
 function broadcast(room) {
@@ -329,7 +329,7 @@ function broadcast(room) {
 const TURN_MS = 60000; // на хід — 1 хвилина, далі за гравця ходить бот
 function startSeries(room) {
   room.startedAt = Date.now();
-  room.ser = E.newSeries(room.n); room.result = null; room.rec = null;
+  room.ser = E.newSeries(room.n, room.goal); room.result = null; room.rec = null;
   startDeal(room, true);
 }
 function startDeal(room, first) {
@@ -355,7 +355,7 @@ function startDuo(room, goat) {
     const h = keep.find(x => x.type === 'human');
     if (h) room.hostId = h.id;
   }
-  room.ser = E.newSeries(2);
+  room.ser = E.newSeries(2, room.goal);
   room.ser.penalties = pens;
   startDeal(room, true);
 }
@@ -421,7 +421,7 @@ function handle(ws, user, m) {
     case 'create': {
       leaveRoom(user.id);
       const n = [2, 3, 4].includes(m.n) ? m.n : 2;
-      const nr = createRoom(user, n, m.level);
+      const nr = createRoom(user, n, m.level, m.goal);
       broadcast(nr); sendChatHistory(nr, user.id);
       return;
     }
@@ -446,6 +446,9 @@ function handle(ws, user, m) {
       return;
     case 'unbot':
       if (isHost && room.status === 'lobby' && room.seats[m.i] && room.seats[m.i].type === 'bot') { room.seats[m.i] = null; broadcast(room); }
+      return;
+    case 'goal':
+      if (isHost && room.status === 'lobby' && (m.goal === 6 || m.goal === 12)) { room.goal = m.goal; broadcast(room); }
       return;
     case 'level':
       if (isHost && room.status === 'lobby' && AI.LEVELS[m.level]) {

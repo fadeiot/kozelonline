@@ -642,8 +642,8 @@ function dealResult(s, mult) {
 }
 
 // ---------- Серія ----------
-function newSeries(n) {
-  return { n, penalties: new Array(teamCount(n)).fill(0), mult: 1, dealNo: 0, nextStarter: null,
+function newSeries(n, goal) {
+  return { n, goal: goal === 6 ? 6 : 12, penalties: new Array(teamCount(n)).fill(0), mult: 1, dealNo: 0, nextStarter: null,
     over: false, loser: -1, losers: [], milk: false, deals: [] };
 }
 function applyDealToSeries(ser, res, lastTrick) {
@@ -658,10 +658,10 @@ function applyDealToSeries(ser, res, lastTrick) {
   const withMax = P.map((x, i) => x === max ? i : -1).filter(i => i >= 0);
   if (ser.n === 2 || ser.n === 4) {
     if ((P[0] === 6 && P[1] === 0) || (P[1] === 6 && P[0] === 0)) { ser.over = true; ser.milk = true; }
-    else if (max >= 12) ser.over = true;
+    else if (max >= ser.goal) ser.over = true;
   } else {
     if (max >= 6 && min === 0) { ser.over = true; ser.milk = true; }
-    else if (max >= 12) ser.over = true;
+    else if (max >= ser.goal) ser.over = true;
   }
   if (ser.over) { ser.losers = withMax; ser.loser = withMax[0]; }
   return rec;
@@ -846,12 +846,14 @@ const LEVEL_NAME = { medium: 'Середній', hard: 'Сильний', slava: 
 const LEVELS_UI = [['medium', 'Середній'], ['hard', 'Сильний'], ['slava', 'Дядя Слава']];
 const levelText = k => k === 'slava' ? 'Дядя Слава' : (LEVEL_NAME[k] || 'Середній').toLowerCase();
 const G = { mode: 2, level: 'hard', ser: null, deal: null,
+  goal: 12,
   rng: L.mulberry32((Date.now() ^ (Math.random() * 1e9)) >>> 0),
   sel: new Set(), busy: false, pending: '', notes: [], prompt: '', started: false, timer: null, chips: {}, fly: -1,
   net: { ws: null, me: null, room: null, names: null, lastSeq: -1, shown: null, join: null, retry: 0, queue: [], sent: false } };
 try {
   const lv = localStorage.getItem('kozel-level'); if (LEVEL_NAME[lv]) G.level = lv;
   const md = +localStorage.getItem('kozel-mode'); if (md >= 2 && md <= 4) G.mode = md;
+  const gl = +localStorage.getItem('kozel-goal'); if (gl === 6 || gl === 12) G.goal = gl;
 } catch (e) {}
 
 const NAMES = { 2: [null, { nom: 'Бот', gen: 'бота' }], 3: [null, { nom: 'Кум', gen: 'Кума' }, { nom: 'Сват', gen: 'Свата' }],
@@ -1246,9 +1248,9 @@ function startSeries() {
   G.gameStart = Date.now(); G.turnLeft = null;
   if (G.net.room) { netSend({ t: 'leave' }); G.net.room = null; }
   tgGuard(true);
-  try { localStorage.setItem('kozel-level', G.level); localStorage.setItem('kozel-mode', G.mode); } catch (e) {}
+  try { localStorage.setItem('kozel-level', G.level); localStorage.setItem('kozel-mode', G.mode); localStorage.setItem('kozel-goal', G.goal); } catch (e) {}
   clearTimeout(G.timer);
-  G.ser = L.newSeries(G.mode); G.started = true; closeSheet(); startDeal(true);
+  G.ser = L.newSeries(G.mode, G.goal); G.started = true; closeSheet(); startDeal(true);
 }
 function startDeal(first) {
   const s = L.newDeal(G.rng, G.ser.n, first, G.ser.nextStarter);
@@ -1312,14 +1314,14 @@ function showDealEnd(res, rec, ser) {
       if (ls.includes(0)) title = ls.length > 1 ? `Ви і ${esc(nm(ls.find(x => x)))}: ${many}` : `Ви ${goat}`;
       else title = ls.map(x => esc(nm(x))).join(' і ') + (ls.length > 1 ? ': ' + many : ' ' + goat);
     }
-    h += `<h2 style="margin-top:18px">${title}</h2><p>${ser.milk ? (n === 3 ? 'У когось 6 штрафних, а в когось нуль' : '6 штрафних проти нуля') + ': найгірший програш, гру закінчено достроково.' : '12 штрафних очок, гру закінчено.'}</p>`;
+    h += `<h2 style="margin-top:18px">${title}</h2><p>${ser.milk ? (n === 3 ? 'У когось 6 штрафних, а в когось нуль' : '6 штрафних проти нуля') + ': найгірший програш, гру закінчено достроково.' : `${ser.goal} ${plural(ser.goal, 'штрафне очко', 'штрафні очки', 'штрафних очок')}, гру закінчено.`}</p>`;
     if (n === 3) {
       const order = [0, 1, 2].sort((a, b) => ser.penalties[a] - ser.penalties[b]);
       h += '<ol class="places">' + order.map(i => `<li>${esc(nm(i))}: ${penWord(ser.penalties[i])}</li>`).join('') + '</ol>';
     }
     // на трьох: двоє, що лишилися, можуть дограти до фіналу вдвох
     // дограти вдвох можна, лише якщо в обох, хто лишився, менше 12 штрафних
-    const survivorsOk = ser.penalties.every((v, i) => ser.losers.includes(i) || v < 12);
+    const survivorsOk = ser.penalties.every((v, i) => ser.losers.includes(i) || v < ser.goal);
     const canDuo = n === 3 && ser.losers.length === 1 && !ser.losers.includes(0) && survivorsOk && (!on || G.net.room.canDuo);
     h += `<div class="stack">`;
     if (canDuo) h += `<button class="btn primary" id="duoBtn">Дограти вдвох до фіналу</button>`;
@@ -1354,7 +1356,7 @@ function startDuo(ser) {
   const keep = [0, 1, 2].filter(i => !ser.losers.includes(i));
   closeSheet();
   G.mode = 2;
-  G.ser = L.newSeries(2);
+  G.ser = L.newSeries(2, ser.goal);
   G.ser.penalties = keep.map(i => ser.penalties[i]);
   G.chips = {}; G.turnLeft = null;
   toast('Граємо вдвох до фіналу. Штрафні очки перенесено.');
@@ -1638,7 +1640,7 @@ function renderPause(v) {
 function showLobby(v) {
   G.net.lobbyOpen = true;
   const n = v.n;
-  let h = `<h2>Стіл ${v.code}</h2><p>${MODE_NAME[n]}. Сила ботів: ${levelText(v.level)}.</p><div class="seats">`;
+  let h = `<h2>Стіл ${v.code}</h2><p>${MODE_NAME[n]}. Гра до ${v.goal || 12} штрафних. Сила ботів: ${levelText(v.level)}.</p><div class="seats">`;
   v.seats.forEach((x, i) => {
     const place = `місце ${i + 1}` + (n === 4 ? `<br>команда ${i % 2 === 0 ? 'А' : 'Б'}` : '');
     let who, right = '';
@@ -1659,6 +1661,9 @@ function showLobby(v) {
     h += `<div class="menu-lbl">Сила ботів</div><div class="stack"><div class="row">` +
       LEVELS_UI.map(([k, t]) =>
         `<button class="btn${k === v.level ? ' primary' : ''}" data-nlv="${k}">${t}</button>`).join('') + `</div></div>`;
+    h += `<div class="menu-lbl">Довжина гри</div><div class="stack"><div class="row">` +
+      [[12, 'До 12'], [6, 'До 6']].map(([k, t]) =>
+        `<button class="btn${k === (v.goal || 12) ? ' primary' : ''}" data-ngl="${k}">${t}</button>`).join('') + `</div></div>`;
   }
   h += `<div class="stack"><button class="btn" id="inviteBtn">Запросити друзів</button>`;
   if (v.host) h += `<button class="btn primary" id="goBtn"${v.seats.every(Boolean) ? '' : ' disabled'}>${v.seats.every(Boolean) ? 'Почати гру' : 'Заповніть усі місця'}</button>`;
@@ -1669,6 +1674,7 @@ function showLobby(v) {
   document.querySelectorAll('[data-unbot]').forEach(b => b.onclick = () => netSend({ t: 'unbot', i: +b.dataset.unbot }));
   document.querySelectorAll('[data-seat]').forEach(b => b.onclick = () => netSend({ t: 'seat', i: +b.dataset.seat }));
   document.querySelectorAll('[data-nlv]').forEach(b => b.onclick = () => netSend({ t: 'level', level: b.dataset.nlv }));
+  document.querySelectorAll('[data-ngl]').forEach(b => b.onclick = () => netSend({ t: 'goal', goal: +b.dataset.ngl }));
   $('inviteBtn').onclick = () => invite(v);
   if ($('goBtn')) $('goBtn').onclick = () => netSend({ t: 'start' });
   $('leaveBtn').onclick = () => { G.net.lobbyOpen = false; netSend({ t: 'leave' }); };
@@ -1730,17 +1736,18 @@ const RULES = `
 <ul><li>На двох: менше 60 очок — 1 штрафне, до 30 — 2, нуль — 4. 60 на 60 — яйця: додаткова роздача, штрафи подвоюються. 6 штрафних проти 0 — молочний козел.</li>
 <li>На трьох: перемагає найбільша сума, решта отримують штрафи за тією ж шкалою. Нічия за перше місце — обидва без штрафу. Яєць немає. Молочний козел: у когось 6 і більше, а в когось 0.</li>
 <li>Пара на пару: очки партнерів складаються, далі все як на двох, тільки штрафи записуються на команду.</li>
-<li>12 штрафних — козел, гра закінчується.</li></ul>
+<li>12 штрафних — козел, гра закінчується. У короткій грі — 6 штрафних.</li></ul>
 </div>`;
 function openMenu(byUser) {
   G.menuByUser = byUser === true; G.menuHadRoom = !!G.net.room;
   G.net.lobbyOpen = false;
-  let mode = G.mode, level = G.level;
+  let mode = G.mode, level = G.level, goal = G.goal;
   const btns = (key, opts, cur) => `<div class="row">` + opts.map(([v, t]) =>
     `<button class="btn${v === cur ? ' primary' : ''}" data-${key}="${v}" aria-pressed="${v === cur}">${t}</button>`).join('') + `</div>`;
   let h = `<h2>Боярський козел</h2>`;
   h += `<div class="menu-lbl">Гравці</div><div class="stack">` + btns('md', [[2, 'На двох'], [3, 'На трьох'], [4, 'Пара на пару']], mode) + `</div>`;
   h += `<div class="menu-lbl">Сила ботів</div><div class="stack">` + btns('lv', LEVELS_UI, level) + `</div>`;
+  h += `<div class="menu-lbl">Довжина гри</div><div class="stack">` + btns('gl', [[12, 'До 12 (повна)'], [6, 'До 6 (коротка)']], goal) + `</div>`;
   if (G.net.room) h += `<div class="stack"><button class="btn primary" id="resumeBtn">Повернутися за стіл ${G.net.room.code}</button></div>`;
   else if (G.net.lastRoom) h += `<div class="stack"><button class="btn primary" id="backToGame">Повернутися до гри (стіл ${G.net.lastRoom.code})</button></div>`;
   h += `<div class="stack"><button class="btn${G.net.room || G.net.lastRoom ? '' : ' primary'}" id="startBtn">Грати з ботами</button>`;
@@ -1758,12 +1765,12 @@ function openMenu(byUser) {
     set(b.dataset[key]);
     document.querySelectorAll(`[data-${key}]`).forEach(x => { x.classList.toggle('primary', x === b); x.setAttribute('aria-pressed', x === b); });
   });
-  wire('md', v => mode = +v); wire('lv', v => level = v);
-  $('startBtn').onclick = () => { G.mode = mode; G.level = level; startSeries(); };
+  wire('md', v => mode = +v); wire('lv', v => level = v); wire('gl', v => goal = +v);
+  $('startBtn').onclick = () => { G.mode = mode; G.level = level; G.goal = goal; startSeries(); };
   if ($('resumeBtn')) $('resumeBtn').onclick = () => { if (G.net.room && G.net.room.status === 'lobby') showLobby(G.net.room); else closeSheet(); };
   $('musicMenuBtn').onclick = () => { Music.toggle(); $('musicMenuBtn').textContent = Music.on ? '♫ Музика: увімкнена' : '♫ Музика: вимкнена'; };
   if ($('backToGame')) $('backToGame').onclick = () => { G.net.lobbyOpen = true; netSend({ t: 'join', code: G.net.lastRoom.code }); };
-  if ($('createBtn')) $('createBtn').onclick = () => { G.mode = mode; G.level = level; G.net.lobbyOpen = true; netSend({ t: 'create', n: mode, level }); };
+  if ($('createBtn')) $('createBtn').onclick = () => { G.mode = mode; G.level = level; G.goal = goal; G.net.lobbyOpen = true; netSend({ t: 'create', n: mode, level, goal }); };
   if ($('joinBtn')) $('joinBtn').onclick = () => {
     const c = $('codeIn').value.replace(/\D/g, '');
     if (c.length !== 4) { toast('Код столу — 4 цифри'); return; }
