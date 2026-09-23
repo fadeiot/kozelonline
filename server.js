@@ -178,7 +178,7 @@ function createRoom(user, n, level) {
     code: newCode(), n, level: AI.LEVELS[level] ? level : 'medium', hostId: user.id,
     seats: new Array(n).fill(null), status: 'lobby', ser: null, deal: null,
     ev: null, evSeq: 0, result: null, rec: null, ready: new Set(), timer: null, turnTimer: null, emptySince: null,
-    chat: [], chatSeq: 0,
+    chat: [], chatSeq: 0, duo: new Set(),
   };
   room.seats[0] = { type: 'human', id: user.id, name: user.name, connected: true };
   rooms.set(room.code, room); userRoom.set(user.id, room.code); userLast.set(user.id, room.code);
@@ -242,6 +242,7 @@ function viewFor(room, id) {
     waiting: humans(room).filter(x => x.connected && !room.ready.has(x.id)).map(x => x.id === id ? 'ви' : x.name),
     away: room.status === 'lobby' ? [] : room.seats.map((x, i) => x && x.type === 'human' && !x.connected ? { i, name: x.name } : null).filter(Boolean),
     now: Date.now(), startedAt: room.startedAt || null,
+    canDuo: canDuo(room) && seatOf(room, id) !== room.ser.losers[0],
     deadline: room.turnDeadline || null,
     invite: BOT_USERNAME && APP_NAME ? `https://t.me/${BOT_USERNAME}/${APP_NAME}?startapp=${room.code}` : null,
   };
@@ -313,6 +314,12 @@ function postChat(room, user, text) {
   for (const x of humans(room)) if (x.connected) send(sockets.get(x.id), { t: 'chat', code: room.code, m: chatFor(room, x.id, m) });
   return null;
 }
+// Дограти вдвох можна, якщо козел один, а в обох, хто лишився, менше 12 штрафних
+function canDuo(room) {
+  if (room.n !== 3 || room.status !== 'over' || !room.ser || room.ser.losers.length !== 1) return false;
+  const goat = room.ser.losers[0];
+  return room.ser.penalties.every((v, i) => i === goat || v < 12);
+}
 function send(ws, msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
 function broadcast(room) {
   for (const x of humans(room)) if (x.connected) send(sockets.get(x.id), viewFor(room, x.id));
@@ -330,6 +337,27 @@ function startDeal(room, first) {
   room.status = 'playing'; room.result = null; room.rec = null; room.ready = new Set();
   room.ev = { t: 'deal', p: room.deal.attacker }; room.evSeq++;
   schedule(room, true); broadcast(room);
+}
+// Козел вибуває, двоє інших продовжують удвох зі своїми штрафними очками
+function startDuo(room, goat) {
+  const out = room.seats[goat];
+  const keep = room.seats.filter((_, i) => i !== goat);
+  const pens = [0, 1, 2].filter(i => i !== goat).map(i => room.ser.penalties[i]);
+  if (out && out.type === 'human') {
+    userRoom.delete(out.id); userLast.delete(out.id);
+    send(sockets.get(out.id), { t: 'error', msg: 'Ви козел. Інші догравають удвох.' });
+    send(sockets.get(out.id), { t: 'left', lastRoom: null });
+  }
+  room.seats = keep;
+  room.n = 2;
+  room.duo = new Set(); room.ready = new Set();
+  if (!keep.some(x => x.type === 'human' && x.id === room.hostId)) {
+    const h = keep.find(x => x.type === 'human');
+    if (h) room.hostId = h.id;
+  }
+  room.ser = E.newSeries(2);
+  room.ser.penalties = pens;
+  startDeal(room, true);
 }
 function endDeal(room) {
   const res = E.dealResult(room.deal, room.ser.mult);
@@ -439,6 +467,15 @@ function handle(ws, user, m) {
     case 'ready':
       room.ready.add(user.id); maybeContinue(room);
       return;
+    case 'duo': { // на трьох: двоє, що лишилися, догравають удвох
+      if (!canDuo(room)) return;
+      const goat = room.ser.losers[0];
+      if (s < 0 || s === goat) return;
+      room.duo.add(user.id);
+      const need = room.seats.filter((x, i) => x && x.type === 'human' && i !== goat && x.connected);
+      if (need.every(x => room.duo.has(x.id))) startDuo(room, goat); else broadcast(room);
+      return;
+    }
     case 'chat': {
       if (s < 0) return;
       const err = postChat(room, user, m.text);
