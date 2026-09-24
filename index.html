@@ -373,6 +373,41 @@ body.tg-fs .toast{top:calc(12px + var(--tg-safe-area-inset-top,0px) + var(--tg-c
 .tut{padding-right:34px}
 .tut .x{position:absolute;right:6px;top:4px;background:none;border:0;color:var(--ink-muted);font-size:1rem;cursor:pointer;padding:6px}
 .share-prev{display:block;width:100%;max-width:300px;margin:10px auto 0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+
+/* ===== Стіл «Віяло» (варіант А) ===== */
+#myHand{align-items:flex-end;padding-top:16px;padding-bottom:10px}
+#myHand .card{margin-left:calc(var(--cw)*-.16);touch-action:none;transition:translate .235s cubic-bezier(.2,.8,.2,1),box-shadow .235s ease,filter .2s ease}
+#myHand .card:first-child{margin-left:0}
+#myHand .card.dim{filter:brightness(.55) saturate(.6)}
+#myHand .card.ok{box-shadow:0 0 0 2px rgba(127,176,105,.95),0 6px 14px rgba(0,0,0,.4)}
+#myHand .card.sel{translate:0 -18px;box-shadow:0 0 0 3px var(--brass),0 10px 18px rgba(0,0,0,.35)}
+#myHand .card.dragging{opacity:.3}
+.drag-ghost{position:fixed;z-index:30;pointer-events:none;margin:0!important;box-shadow:0 16px 30px rgba(0,0,0,.55)!important}
+#board4{position:relative}
+.cross.drop{outline:2px dashed rgba(127,176,105,.8);outline-offset:6px;border-radius:14px}
+.slot4{position:relative;width:var(--c4);height:calc(var(--c4)*1.4);border-radius:calc(var(--c4)*.1);border:1.5px dashed rgba(127,176,105,.85);background:rgba(127,176,105,.1);flex:none}
+.slot4 .card{position:absolute;left:-1.5px;top:-1.5px;box-shadow:0 0 0 2px rgba(127,176,105,.95),0 4px 10px rgba(0,0,0,.35)}
+.slot4 .card.nobeat{box-shadow:0 0 0 2px var(--red),0 4px 10px rgba(0,0,0,.35);opacity:.8}
+/* таймер кільцем довкола аватарки */
+.seat4.timed .ava::before{content:"";position:absolute;inset:-7px;border-radius:50%;
+  background:conic-gradient(var(--brass) calc(var(--t,1)*360deg),rgba(255,255,255,.14) 0);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px))}
+.seat4.timed.low .ava::before{background:conic-gradient(var(--red) calc(var(--t,1)*360deg),rgba(255,255,255,.14) 0)}
+.seat4.timed .ava{box-shadow:0 0 16px rgba(212,167,58,.45)}
+/* остання взятка */
+.lastbtn{position:absolute;left:0;bottom:10px;z-index:2;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:5px 8px 5px 6px;color:var(--ink-muted);font:500 .72rem var(--sans);cursor:pointer}
+.lastbtn[hidden]{display:none}
+.lastbtn .card{--w:20px;rotate:-8deg;border-width:2px}
+.lastbtn:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+.peek{position:fixed;inset:0;z-index:15;background:rgba(10,6,4,.6);display:flex;align-items:center;justify-content:center;padding:20px}
+.peek[hidden]{display:none}
+.peek-card{background:var(--sheet);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:16px 18px;max-width:420px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.peek-card h3{margin:0 0 10px;font:800 1.2rem var(--serif)}
+.peek-row{display:flex;align-items:center;gap:10px;margin:8px 0}
+.peek-row>span{width:74px;flex:none;font-size:.82rem;color:var(--ink-muted)}
+.peek-row .cards{display:flex;gap:4px;flex-wrap:wrap}
+.peek-row .card{--w:40px}
+.peek-card p{margin:10px 0 0;font-size:.78rem;color:var(--ink-muted)}
 </style>
 </head>
 <body>
@@ -408,6 +443,7 @@ body.tg-fs .toast{top:calc(12px + var(--tg-safe-area-inset-top,0px) + var(--tg-c
   <section class="board4" id="board4" hidden>
     <div class="center4" id="center4"></div>
     <div class="clock" id="clock" aria-label="Час гри"></div>
+    <button class="lastbtn" id="lastBtn" hidden aria-label="Остання взятка"></button>
     <div class="seat4 top" id="seatT"></div>
     <div class="seat4 left" id="seatL"></div>
     <div class="seat4 right" id="seatR"></div>
@@ -428,6 +464,7 @@ body.tg-fs .toast{top:calc(12px + var(--tg-safe-area-inset-top,0px) + var(--tg-c
 <div class="toast" id="toast" role="alert" hidden></div>
 <div class="pause" id="pause" role="alertdialog" aria-live="assertive" hidden></div>
 <div class="goat-wrap" id="goatWrap" hidden></div>
+<div class="peek" id="peek" hidden></div>
 <div class="ach-toast" id="achToast" role="status" hidden></div>
 <div class="chat" id="chat" hidden>
   <div class="chat-card" role="dialog" aria-label="Чат столу">
@@ -523,6 +560,7 @@ function renderCore() {
   $('board4').hidden = false;
   if (!s) {
     for (const id of ['seatT', 'seatL', 'seatR', 'playsT', 'playsL', 'playsR', 'playsB', 'center4', 'myHand', 'actions']) $(id).innerHTML = '';
+    $('lastBtn').hidden = true;
     return;
   }
   const actor = L.toAct(s);
@@ -569,19 +607,28 @@ function renderCore() {
   }
 
   const mh = $('myHand'); mh.innerHTML = '';
-  const myTurn = !G.busy && actor === 0 && (s.phase === 'attack' || s.phase === 'defend');
-  for (const c of sortHand(s.hands[0], s.trump)) {
+  const myTurn = !G.busy && actor === 0 && (s.phase === 'attack' || s.phase === 'defend') && !G.net.sent;
+  const hints = handHints(s, myTurn);
+  const hs = sortHand(s.hands[0], s.trump), k = hs.length, mid = (k - 1) / 2, step = k > 5 ? 5 : 7;
+  for (const [i, c] of hs.entries()) {
     const el = cardEl(c, { button: true });
+    // віяло: карти трохи повернуті й лежать дугою
+    el.style.rotate = ((i - mid) * step) + 'deg';
+    el.style.top = (Math.pow(Math.abs(i - mid), 2) * 3) + 'px';
+    el.style.zIndex = i + 1;
+    if (hints.ok.has(c)) el.classList.add('ok');
+    if (hints.dim.has(c)) el.classList.add('dim');
     if (G.sel.has(c)) el.classList.add('sel');
     el.setAttribute('aria-pressed', G.sel.has(c));
     el.disabled = !myTurn;
     el.dataset.c = 'c' + c;
     el.onclick = () => {
+      if (Drag.justDropped) return;
       if (G.sel.has(c)) G.sel.delete(c); else G.sel.add(c);
       haptic.tap();
-      el.classList.toggle('sel', G.sel.has(c)); el.setAttribute('aria-pressed', G.sel.has(c));
-      renderActions(true);
+      renderCore();
     };
+    if (myTurn) el.onpointerdown = e => Drag.start(e, c, el);
     mh.appendChild(el);
   }
   renderActions(actor === 0 && !G.busy);
@@ -614,7 +661,7 @@ function renderBoard(s, actor) {
     const ch = off ? (G.net.room.auto && G.net.room.auto[p] ? '🤖 грає бот' : 'нема зв’язку') : chip;
     seat.innerHTML = `<div class="ava" aria-label="${nmp}">${letter}${avaImg(p)}<span class="cnt4">${s.hands[p].length}</span></div>` +
       `<div class="nm4">${nmp.length > 12 ? nmp.slice(0, 11) + '…' : nmp}${isMate(p) ? ' (партнер)' : ''}</div><div class="chip${ch === 'взятка' ? ' win' : ''}${ch ? '' : ' hide'}">${ch || '·'}</div>`;
-    if (actor === p && turnRemainMs() !== null) seat.insertAdjacentHTML('beforeend', '<div class="tl" data-tl></div>');
+    if (actor === p && turnRemainMs() !== null) { seat.classList.add('timed'); seat.insertAdjacentHTML('beforeend', '<div class="tl" data-tl></div>'); }
     const bb = Chat.bubbles[p];
     if (bb && bb.until > Date.now()) seat.insertAdjacentHTML('beforeend', `<div class="bubble">${esc(bb.text)}</div>`);
   }
@@ -635,6 +682,15 @@ function renderBoard(s, actor) {
     if (p < 0) continue;
     if (p === topOwner && s.phase !== 'resolve') box.classList.add('top');
     if (p === lastP && G.fly < 0) box.classList.add('new');
+    // мій захист: пунктирні місця під кожну карту, яку треба побити; вибрані карти лягають на «свою»
+    if (p === 0 && t && s.phase === 'defend' && actor === 0 && !G.busy && !G.net.sent) {
+      pairSel(t.top, [...G.sel], s.trump).forEach(x => {
+        const sl = document.createElement('div'); sl.className = 'slot4';
+        if (x) sl.appendChild(cardEl(x.c, { cls: x.ok ? '' : 'nobeat' }));
+        box.appendChild(sl);
+      });
+      continue;
+    }
     byP[p].forEach((e, i) => {
       const el = cardEl(e.back ? null : e.c);
       // свої скинуті карти знаємо; чужі закриті не мають ідентифікатора в DOM
@@ -653,6 +709,10 @@ function renderBoard(s, actor) {
     d.style.color = s.trump >= 2 ? 'var(--red)' : 'var(--ink)'; d.textContent = L.SUIT_SYM[s.trump]; c4.appendChild(d);
   }
   // Підпис: масть козиря великим символом + скільки лишилось у колоді
+  const ltr = G.net.room ? G.net.room.lastTrick : G.lastTrick;
+  const lbtn = $('lastBtn');
+  lbtn.hidden = !ltr;
+  if (ltr) { lbtn.innerHTML = ''; lbtn.appendChild(cardEl(null)); lbtn.insertAdjacentText('beforeend', 'остання взятка'); lbtn.onclick = () => showLastTrick(ltr); }
   const lb = document.createElement('div'); lb.className = 'lbl';
   const col = s.trump >= 2 ? 'var(--red)' : 'var(--ink)';
   lb.innerHTML = `<b>козир <span class="sym" style="color:${col}">${L.SUIT_SYM[s.trump]}</span> ${L.SUIT_NAME[s.trump]}</b><br>колода: ${stockWord(s.stock.length, n)}`;
@@ -666,6 +726,7 @@ function renderActions(mine) {
     const b = document.createElement('button'); b.className = 'btn' + (primary ? ' primary' : '');
     b.textContent = txt; b.disabled = !enabled; b.onclick = fn; box.appendChild(b); return b;
   };
+  if (G.undoSnap && !G.net.room) { mk('↶ Скасувати хід', doUndo, true); return; }
   if (!mine || s.phase === 'resolve' || s.phase === 'dealEnd') {
     const a = L.toAct(s);
     mk(G.busy && a > 0 ? nm(a) + ' думає…' : 'Зачекайте', null, false); return;
@@ -777,7 +838,19 @@ function act(a) {
     netSend({ t: 'act', a: { type: a.type, cards: a.cards } });
     render(); return;
   }
+  G.undoSnap = !G.tut && G.set.undo !== false
+    ? { deal: L.packState(L.cloneState(G.deal)), notes: G.notes.slice(), chips: { ...G.chips }, pending: G.pending, prompt: G.prompt } : null;
   perform(0, a);
+}
+// Скасувати свій хід (гра з ботами): поки бот не відповів
+const UNDO_MS = 1800;
+function doUndo() {
+  const u = G.undoSnap; if (!u) return;
+  clearTimeout(G.timer);
+  G.undoSnap = null;
+  G.deal = L.unpackState(u.deal); G.notes = u.notes; G.chips = u.chips; G.pending = u.pending; G.prompt = u.prompt;
+  G.sel.clear(); G.busy = false;
+  haptic.tap(); saveGame(); step();
 }
 
 function perform(p, a) {
@@ -809,7 +882,7 @@ function perform(p, a) {
   }
   render();
   saveGame();
-  later(step, p === 0 ? 350 : 500);
+  later(step, p === 0 ? (G.undoSnap ? UNDO_MS : 350) : 500);
 }
 
 function promptMe() {
@@ -826,6 +899,7 @@ function promptMe() {
 
 function step() {
   const s = G.deal;
+  if (G.undoSnap) { G.undoSnap = null; }
   if (s.phase === 'dealEnd') { G.busy = false; render(); return endDeal(); }
   if (s.phase === 'resolve') {
     const w = L.trickWinner(s);
@@ -836,7 +910,7 @@ function step() {
       if (w === 0 || isMate(w)) haptic.good();
       later(() => {
         collectTo(w);
-        later(() => { if (G.tut) return Tut.done(); L.finishTrick(s); G.notes = []; G.pending = res; render(); saveGame(); later(step, 150); }, dur(560));
+        later(() => { if (G.tut) return Tut.done(); G.lastTrick = captureTrick(s); L.finishTrick(s); G.notes = []; G.pending = res; render(); saveGame(); later(step, 150); }, dur(560));
       }, 850);
       return;
     }
@@ -863,6 +937,7 @@ function startSeries() {
 }
 function startDeal(first) {
   const s = L.newDeal(G.rng, G.ser.n, first, G.ser.nextStarter);
+  G.lastTrick = null;
   G.deal = s; G.sel.clear(); G.notes = []; G.prompt = ''; G.chips = {}; G.fly = -1; G.turnLeft = null;
   G.chips = { [s.attacker]: 'перший' };
   const who = s.attacker === 0 ? 'Ви ходите першим' : `Першим ходить ${nm(s.attacker).toLowerCase() === 'бот' ? 'бот' : nm(s.attacker)}`;
@@ -1450,6 +1525,10 @@ function tick() {
     if (r <= 10000 && !G.warned) { G.warned = true; haptic.act(); }
   }
   document.querySelectorAll('[data-autoat]').forEach(el => { const ms = +el.dataset.autoat - now - (G.net.offset || 0); el.textContent = ms > 0 ? fmtTime(ms) : 'кілька секунд'; });
+  document.querySelectorAll('.seat4.timed').forEach(el => {
+    const r = rem === null ? 1 : Math.max(0, rem) / TURN_MS;
+    el.style.setProperty('--t', r.toFixed(3)); el.classList.toggle('low', rem !== null && rem <= 10000);
+  });
   document.querySelectorAll('[data-tl]').forEach(el => {
     el.textContent = rem !== null ? Math.max(0, Math.ceil(rem / 1000)) + ' с' : '';
     el.classList.toggle('low', rem !== null && rem <= 10000);
@@ -1596,7 +1675,7 @@ const KV = {
 };
 
 // ---------- Налаштування ----------
-const DEF_SET = { speed: 'normal', timer: true, table: 'wood', back: 'bordo', sfx: true };
+const DEF_SET = { speed: 'normal', timer: true, table: 'wood', back: 'bordo', sfx: true, undo: true };
 G.set = { ...DEF_SET };
 try { Object.assign(G.set, JSON.parse(KV.local('kozel-set') || '{}')); } catch (e) {}
 function applySet() {
@@ -1733,6 +1812,7 @@ function openSettings() {
   h += row('Таймер на хід у грі з ботами', 'timer', [[true, 'Хвилина'], [false, 'Без таймера']]);
   h += row('Сукно', 'table', [['wood', sw('#4a3222') + 'Дерево'], ['green', sw('#2f6b45') + 'Зелене'], ['blue', sw('#2d5376') + 'Синє']]);
   h += row('Сорочка карт', 'back', [['bordo', sw('#6b1f2a') + 'Бордо'], ['blue', sw('#1f4a7a') + 'Синя'], ['green', sw('#2a6a45') + 'Зелена'], ['black', sw('#2b2724') + 'Чорна']]);
+  h += row('Скасування ходу в грі з ботами', 'undo', [[true, 'Можна скасувати'], [false, 'Без скасування']]);
   h += row('Звуки', 'sfx', [[true, 'Увімкнено'], [false, 'Вимкнено']]);
   h += `<div class="setrow"><div class="menu-lbl">Фонова музика</div><div class="row"><button class="btn${Music.on ? ' primary' : ''}" id="musOn">Увімкнено</button><button class="btn${Music.on ? '' : ' primary'}" id="musOff">Вимкнено</button></div></div>`;
   if (TG && tgv('8.0')) {
@@ -2017,6 +2097,122 @@ const Share = {
     };
   },
 };
+
+
+// ===================================================================
+// ---------- Стіл «Віяло»: підсвітка, місця для карт, перетягування, остання взятка ----------
+// Які карти зараз підходять (зелена рамка), а які ні (притьмарені)
+function handHints(s, myTurn) {
+  const ok = new Set(), dim = new Set();
+  if (!s || !myTurn) return { ok, dim };
+  const hand = s.hands[0], sel = [...G.sel];
+  if (s.phase === 'defend') {
+    const covers = L.legalActions(s).filter(a => a.type === 'cover');
+    if (!covers.length) return { ok, dim }; // побити нічим — усі карти рівні, лишається скинути
+    const fit = sel.length ? covers.filter(a => sel.every(x => a.cards.includes(x))) : covers;
+    for (const a of (fit.length ? fit : covers)) a.cards.forEach(c => ok.add(c));
+    for (const c of hand) if (!ok.has(c)) dim.add(c);
+  } else if (s.phase === 'attack' && sel.length) {
+    for (const c of hand) if (!G.sel.has(c) && !L.isUniform([...sel, c])) dim.add(c);
+  }
+  return { ok, dim };
+}
+// Вибрані карти → на яку карту суперника кожна ляже (найбільше «побитих»; решта — на скидання)
+function pairSel(top, sel, trump) {
+  let best = top.map(() => null), bestN = -1;
+  const cur = top.map(() => null);
+  const rec = (i, n) => {
+    if (i === sel.length) { if (n > bestN) { bestN = n; best = cur.slice(); } return; }
+    for (let j = 0; j < top.length; j++) if (cur[j] === null && L.beats(sel[i], top[j], trump)) { cur[j] = sel[i]; rec(i + 1, n + 1); cur[j] = null; }
+    rec(i + 1, n);
+  };
+  rec(0, 0);
+  const res = best.map(c => c === null ? null : { c, ok: true });
+  for (const c of sel) if (!best.includes(c)) { const j = res.indexOf(null); if (j >= 0) res[j] = { c, ok: false }; }
+  return res;
+}
+// Перетягування карти на стіл: відпустили над столом — хід, якщо він уже повний
+const Drag = {
+  start(e, c, el) {
+    if (e.button > 0) return;
+    const d = { c, el, x: e.clientX, y: e.clientY, on: false, id: e.pointerId };
+    this.d = d;
+    try { el.setPointerCapture(e.pointerId); } catch (x) {}
+    el.onpointermove = ev => this.move(ev);
+    el.onpointerup = ev => this.end(ev, false);
+    el.onpointercancel = ev => this.end(ev, true);
+  },
+  zone() { const r = $('cross').getBoundingClientRect(); return { l: r.left - 20, t: r.top - 30, r: r.right + 20, b: r.bottom + 10 }; },
+  over(ev) { const z = this.zone(); return ev.clientX >= z.l && ev.clientX <= z.r && ev.clientY >= z.t && ev.clientY <= z.b; },
+  move(ev) {
+    const d = this.d; if (!d || ev.pointerId !== d.id) return;
+    const dx = ev.clientX - d.x, dy = ev.clientY - d.y;
+    if (!d.on) {
+      if (Math.hypot(dx, dy) < 10) return;
+      d.on = true;
+      const r = d.el.getBoundingClientRect();
+      d.g = d.el.cloneNode(true); d.g.classList.add('drag-ghost'); d.g.classList.remove('sel', 'dim', 'ok');
+      d.g.style.width = r.width + 'px'; d.g.style.height = r.height + 'px'; d.g.style.top = '0'; d.g.style.left = '0';
+      d.ox = d.x - r.left; d.oy = d.y - r.top;
+      document.body.appendChild(d.g); d.el.classList.add('dragging');
+    }
+    d.g.style.transform = `translate(${ev.clientX - d.ox}px, ${ev.clientY - d.oy}px) rotate(4deg)`;
+    $('cross').classList.toggle('drop', this.over(ev));
+  },
+  end(ev, cancel) {
+    const d = this.d; if (!d) return;
+    this.d = null;
+    d.el.onpointermove = d.el.onpointerup = d.el.onpointercancel = null;
+    $('cross').classList.remove('drop');
+    if (!d.on) return; // звичайне натискання — спрацює onclick
+    d.g.remove(); d.el.classList.remove('dragging');
+    this.justDropped = true; setTimeout(() => { this.justDropped = false; }, 60);
+    if (!cancel && this.over(ev)) dropCard(d.c); else renderCore();
+  },
+};
+function dropCard(c) {
+  const s = G.deal;
+  if (!s || G.busy || L.toAct(s) !== 0) return;
+  haptic.tap();
+  if (s.phase === 'attack') {
+    if (!G.sel.has(c)) G.sel.add(c);
+    if (!L.isUniform([...G.sel])) G.sel = new Set([c]);
+    return act({ type: 'attack', cards: [...G.sel] });
+  }
+  if (s.phase === 'defend') {
+    const n = s.table.top.length;
+    G.sel.add(c);
+    if (G.sel.size > n) G.sel = new Set([c]);
+    const sel = [...G.sel];
+    if (sel.length === n && L.canCover(s.table.top, sel, s.trump)) return act({ type: 'cover', cards: sel });
+    render();
+  }
+}
+// Остання взятка: хто забрав і що там було (скинуті сорочкою — закриті, крім своїх)
+function captureTrick(s) {
+  const t = s.table, w = L.trickWinner(s);
+  const cards = t.attack.map(c => [c, 0, t.by]);
+  for (const l of t.layers) for (const c of l.cards) cards.push([l.type === 'discard' && l.p !== 0 ? -1 : c, l.type === 'discard' ? 1 : 0, l.p]);
+  return { w, cards };
+}
+function showLastTrick(lt) {
+  const el = $('peek'), n = n_();
+  let h = `<div class="peek-card" role="dialog" aria-label="Остання взятка"><h3>${lt.w === 0 ? 'Ваша взятка' : 'Взятку забрав: ' + esc(nm(lt.w))}</h3>`;
+  const by = Array.from({ length: n }, () => []);
+  for (const [c, hid, p] of lt.cards) if (by[p]) by[p].push([c, hid]);
+  by.forEach((cs, p) => {
+    if (!cs.length) return;
+    h += `<div class="peek-row"><span>${esc(nm(p))}</span><div class="cards" data-p="${p}"></div></div>`;
+  });
+  h += `<p>Карти сорочкою догори — скинуті, їх побачите після роздачі. Торкніться, щоб закрити.</p></div>`;
+  el.innerHTML = h;
+  by.forEach((cs, p) => {
+    const box = el.querySelector(`[data-p="${p}"]`); if (!box) return;
+    for (const [c, hid] of cs) box.appendChild(cardEl(hid && c < 0 ? null : c, { cls: hid && c >= 0 ? 'nobeat' : '' }));
+  });
+  el.hidden = false; haptic.tap();
+  el.onclick = () => { el.hidden = true; };
+}
 
 G.prompt = 'Оберіть гру в меню.';
 render();

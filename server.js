@@ -386,6 +386,8 @@ function viewFor(room, id) {
     };
     if (d.phase === 'resolve') v.deal.winner = rot(E.trickWinner(d));
   }
+  // остання взятка: чужі скинуті карти лишаються закритими
+  if (room.lastTrick && room.status === 'playing') v.lastTrick = { w: rot(room.lastTrick.w), cards: room.lastTrick.cards.map(([c, h, by]) => [h && by !== s ? -1 : c, h, rot(by)]) };
   if (room.ev) v.ev = { ...room.ev, p: room.ev.p === undefined ? undefined : rot(room.ev.p), seq: room.evSeq };
   if (room.result) {
     const r = room.result;
@@ -446,7 +448,7 @@ function startSeries(room) {
 }
 function startDeal(room, first) {
   room.deal = E.newDeal(rng, room.n, first, room.ser.nextStarter);
-  room.status = 'playing'; room.result = null; room.rec = null; room.reveal = null; room.ready = new Set();
+  room.status = 'playing'; room.result = null; room.rec = null; room.reveal = null; room.lastTrick = null; room.ready = new Set();
   room.ev = { t: 'deal', p: room.deal.attacker }; room.evSeq++;
   schedule(room, true); broadcast(room);
 }
@@ -520,6 +522,8 @@ function planTurn(room) {
   if (d.phase === 'resolve') {
     room.timer = setTimeout(() => {
       if (room.deal !== d || d.phase !== 'resolve') return;
+      const t = d.table, lw = E.trickWinner(d);
+      room.lastTrick = { w: lw, cards: t.attack.map(c => [c, 0, t.by]).concat(...t.layers.map(l => l.cards.map(c => [c, l.type === 'discard' ? 1 : 0, l.p]))) };
       const w = E.finishTrick(d);
       room.ev = { t: 'collected', p: w }; room.evSeq++;
       if (d.phase === 'dealEnd') endDeal(room);
@@ -777,7 +781,7 @@ function packRoom(r) {
   return {
     code: r.code, n: r.n, level: r.level, goal: r.goal, hostId: r.hostId, status: r.status,
     seats: r.seats.map(x => x && { ...x }), ser: r.ser, deal: r.deal ? E.packState(r.deal) : null,
-    ev: r.ev, evSeq: r.evSeq, result: r.result, rec: r.rec, reveal: r.reveal, ready: [...r.ready],
+    ev: r.ev, evSeq: r.evSeq, result: r.result, rec: r.rec, reveal: r.reveal, lastTrick: r.lastTrick || null, ready: [...r.ready],
     chat: r.chat, chatSeq: r.chatSeq, duo: [...r.duo], startedAt: r.startedAt || null, emptySince: r.emptySince,
   };
 }
