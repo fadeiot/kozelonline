@@ -1,4 +1,5 @@
-// ===== Боярський козел: рушій гри (2 або 3 гравці) =====
+// ===== Боярський козел: рушій гри (2, 3 або 4 гравці) =====
+// Єдине джерело правил: цей файл підключає і сервер (require), і сторінка гри (<script src>).
 // Карта = число 0..35: масть = c/9|0, ранг = c%9
 // Порядок старшинства (ранг 0..8): 6 7 8 9 В Д К 10 Т
 const SUIT_SYM = ['♠', '♣', '♥', '♦'];
@@ -300,10 +301,18 @@ function applyDealToSeries(ser, res, lastTrick) {
   return rec;
 }
 
+// Стан роздачі у вигляді простого JSON (для збереження, фонового потоку ботів, CloudStorage)
+function packState(s) {
+  return { ...s, table: cloneTable(s.table), known: s.known.map(m => [...m]), knownHidden: s.knownHidden.map(x => [...x]) };
+}
+function unpackState(o) {
+  return { ...o, known: o.known.map(a => new Map(a)), knownHidden: o.knownHidden.map(a => new Set(a)) };
+}
+
 const Engine = {
   SUIT_SYM, SUIT_NAME, RANK_LABEL, PTS, suitOf, rankOf, ptsOf, cardLabel,
   mulberry32, shuffle, beats, canCover, matchCover, isUniform, isCombo, subsets, subsetsOfSize,
   defendersFrom, teamOf, teamCount, newDeal, cloneState, toAct, legalActions, canIntercept, applyAction, trickWinner,
-  finishTrick, pilePoints, penaltyFor, dealResult, newSeries, applyDealToSeries,
+  finishTrick, pilePoints, penaltyFor, dealResult, newSeries, applyDealToSeries, packState, unpackState,
 };
 if (typeof module !== 'undefined') module.exports = Engine;

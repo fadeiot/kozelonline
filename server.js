@@ -1,10 +1,13 @@
 // ===== Боярський козел: онлайн-сервер =====
 // Роздає сторінку гри та тримає столи для гри з друзями через WebSocket.
 // Змінні середовища (Render → Environment):
-//   BOT_TOKEN     — токен бота від @BotFather (для перевірки, що гравець справді з Telegram)
-//   BOT_USERNAME  — логін бота без @, напр. boyarskyi_kozel_bot (для посилань-запрошень)
+//   BOT_TOKEN     — токен бота від @BotFather (перевірка гравців, аватарки, сповіщення)
+//   BOT_USERNAME  — логін бота без @ (якщо не задано, береться з Telegram)
 //   APP_NAME      — коротка назва Mini App з /newapp, напр. play
 //   ALLOW_GUESTS  — 1, щоб дозволити гру з браузера без Telegram (для перевірки)
+//   UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN — сховище, щоб столи й статистика переживали перезапуск
+//   PUBLIC_URL    — адреса сервера (на Render задається сама як RENDER_EXTERNAL_URL)
+//   KEEP_AWAKE    — 0, щоб вимкнути самопінг (за замовчуванням увімкнено на Render)
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -12,37 +15,66 @@ const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 const E = require('./engine.js');
 const AI = require('./ai.js');
+const Stats = require('./stats.js');
+const Store = require('./store.js');
+const Bots = require('./botpool.js');
 
 const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
 let BOT_USERNAME = (process.env.BOT_USERNAME || '').replace(/^@/, '');
-// Справжній логін бота беремо прямо в Telegram за токеном, щоб посилання-запрошення не ламались через помилку в налаштуваннях
-if (process.env.BOT_TOKEN && typeof fetch === 'function') {
-  fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/getMe`)
-    .then(r => r.json())
-    .then(j => {
-      if (j && j.ok && j.result && j.result.username) {
-        if (BOT_USERNAME && BOT_USERNAME.toLowerCase() !== j.result.username.toLowerCase())
-          console.log(`BOT_USERNAME у налаштуваннях (${BOT_USERNAME}) не збігається з ботом (${j.result.username}), використовую ${j.result.username}`);
-        BOT_USERNAME = j.result.username;
-        console.log('Бот: @' + BOT_USERNAME);
-      } else console.log('getMe: не вдалося отримати логін бота, перевірте BOT_TOKEN');
-    })
-    .catch(e => console.log('getMe помилка: ' + e.message));
-}
 const APP_NAME = process.env.APP_NAME || '';
 const ALLOW_GUESTS = !BOT_TOKEN || process.env.ALLOW_GUESTS === '1';
+const PUBLIC_URL = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/$/, '');
+const KEEP_AWAKE = process.env.KEEP_AWAKE ? process.env.KEEP_AWAKE !== '0' : !!process.env.RENDER_EXTERNAL_URL;
+const WEBHOOK_SECRET = crypto.createHash('sha256').update('kozel-hook:' + BOT_TOKEN).digest('hex').slice(0, 32);
 
-// На безкоштовному сервері процесор слабкий: сильний бот думає не довше 400 мс
-AI.LEVELS.hard.timeMs = 400;
-AI.LEVELS.slava.timeMs = 900;
+// Час на повернення: до 45 с — нічого не зупиняємо; до 3 хв — пауза; далі за гравця грає бот, доки не повернеться
+const GRACE_MS = +process.env.GRACE_MS || 45 * 1000;   // (змінні середовища — лише для перевірок)
+const AUTO_MS = +process.env.AUTO_MS || 3 * 60 * 1000;
+const TURN_MS = 60000;           // на хід — 1 хвилина, далі за гравця ходить бот
+const EMPTY_TTL = 30 * 60 * 1000; // стіл без жодної людини живе 30 хв
 const rng = E.mulberry32((Date.now() ^ (Math.random() * 1e9)) >>> 0);
 
-// ---------- Сторінка гри ----------
-// Сторінку шукаємо і в папці public, і поруч із server.js (якщо GitHub завантажив файли без папки)
-const INDEX_PATHS = [path.join(__dirname, 'public', 'index.html'), path.join(__dirname, 'index.html')];
+// ---------- Telegram Bot API ----------
+async function tg(method, body) {
+  if (!BOT_TOKEN) return null;
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}),
+    });
+    const j = await r.json();
+    if (!j.ok) { console.log(`tg ${method}: ${j.description}`); return null; }
+    return j.result;
+  } catch (e) { console.log(`tg ${method}: ${e.message}`); return null; }
+}
+const appLink = code => BOT_USERNAME && APP_NAME ? `https://t.me/${BOT_USERNAME}/${APP_NAME}` + (code ? `?startapp=${code}` : '') : null;
+if (BOT_TOKEN) {
+  tg('getMe').then(me => {
+    if (!me) return;
+    if (BOT_USERNAME && BOT_USERNAME.toLowerCase() !== me.username.toLowerCase())
+      console.log(`BOT_USERNAME у налаштуваннях (${BOT_USERNAME}) не збігається з ботом (${me.username}), використовую ${me.username}`);
+    BOT_USERNAME = me.username;
+    console.log('Бот: @' + BOT_USERNAME);
+  });
+}
+// Сповіщення в особисті повідомлення бота (не частіше разу на хвилину для кожного гравця)
+const lastNotify = new Map();
+function notify(uid, text, code, force) {
+  if (!BOT_TOKEN || !uid || !uid.startsWith('tg')) return;
+  const now = Date.now();
+  if (!force && now - (lastNotify.get(uid) || 0) < 60000) return;
+  lastNotify.set(uid, now);
+  const link = appLink(code);
+  tg('sendMessage', {
+    chat_id: uid.slice(2), text,
+    reply_markup: link ? { inline_keyboard: [[{ text: code ? `Повернутися за стіл ${code}` : 'Грати', url: link }]] } : undefined,
+  });
+}
+
+// ---------- Сторінка гри та файли ----------
+const findFile = name => [path.join(__dirname, 'public', name), path.join(__dirname, name)].find(f => fs.existsSync(f));
 function serveIndex(res) {
-  const file = INDEX_PATHS.find(f => fs.existsSync(f));
+  const file = findFile('index.html');
   if (!file) {
     res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Не знайдено index.html. Завантажте його в репозиторій поруч із server.js.');
@@ -50,16 +82,23 @@ function serveIndex(res) {
   }
   fs.readFile(file, 'utf8', (err, html) => {
     if (err) { res.writeHead(500); res.end('index.html read error'); return; }
-    const cfg = `<script>window.KOZEL_ONLINE=${JSON.stringify({ bot: BOT_USERNAME, app: APP_NAME, guests: ALLOW_GUESTS })};</script>`;
+    const cfg = `<script>window.KOZEL_ONLINE=${JSON.stringify({ bot: BOT_USERNAME, app: APP_NAME, guests: ALLOW_GUESTS, share: !!BOT_TOKEN })};</script>`;
     html = html.replace('<script', cfg + '\n<script');
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
     res.end(html);
   });
 }
-// Фонова музика: лежить поруч із server.js (або в public). iPhone вимагає підтримки Range-запитів.
-const MUSIC_PATHS = [path.join(__dirname, 'music.m4a'), path.join(__dirname, 'public', 'music.m4a')];
+// Правила, боти й статистика — ті самі файли, що використовує сервер (одне джерело правил)
+const SCRIPTS = { '/engine.js': 'engine.js', '/ai.js': 'ai.js', '/stats.js': 'stats.js' };
+function serveScript(res, name) {
+  const file = findFile(name);
+  if (!file) { res.writeHead(404); res.end(); return; }
+  res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-cache' });
+  fs.createReadStream(file).pipe(res);
+}
+// Фонова музика. iPhone вимагає підтримки Range-запитів.
 function serveMusic(req, res) {
-  const file = MUSIC_PATHS.find(f => fs.existsSync(f));
+  const file = findFile('music.m4a');
   if (!file) { res.writeHead(404); res.end(); return; }
   const size = fs.statSync(file).size;
   const head = { 'Content-Type': 'audio/mp4', 'Accept-Ranges': 'bytes', 'Cache-Control': 'public, max-age=604800' };
@@ -77,20 +116,38 @@ function serveMusic(req, res) {
     fs.createReadStream(file).pipe(res);
   }
 }
+// Картинки результатів «Поділитися» (живуть 24 год у пам'яті)
+const shares = new Map();
+function serveShare(res, id) {
+  const x = shares.get(id.replace(/\.jpg$/, ''));
+  if (!x) { res.writeHead(404); res.end(); return; }
+  res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': x.buf.length, 'Cache-Control': 'public, max-age=86400' });
+  res.end(x.buf);
+}
+function readBody(req, limit) {
+  return new Promise((resolve, reject) => {
+    let size = 0; const parts = [];
+    req.on('data', c => { size += c.length; if (size > limit) { reject(new Error('too big')); req.destroy(); } else parts.push(c); });
+    req.on('end', () => resolve(Buffer.concat(parts)));
+    req.on('error', reject);
+  });
+}
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/health') { res.writeHead(200); res.end('ok'); return; }
   if (url.pathname === '/music.m4a') return serveMusic(req, res);
+  if (SCRIPTS[url.pathname]) return serveScript(res, SCRIPTS[url.pathname]);
   if (url.pathname.startsWith('/avatar/')) { serveAvatar(res, url.pathname.slice(8)); return; }
+  if (url.pathname.startsWith('/share/')) { serveShare(res, url.pathname.slice(7)); return; }
+  if (url.pathname === '/tg/webhook' && req.method === 'POST') { onWebhook(req, res); return; }
   if (url.pathname === '/' || url.pathname === '/index.html') return serveIndex(res);
   res.writeHead(404); res.end('not found');
 });
 
 // ---------- Аватарки з Telegram ----------
-// Фото профілю беремо через Bot API (токен не потрапляє до гравців) і віддаємо за адресою /avatar/<id>.
-const knownTg = new Set();        // лише гравці, які заходили в гру (щоб сервер не став чужим проксі)
-const photoUrls = new Map();      // id → photo_url з initData (запасний варіант)
-const avaCache = new Map();       // id → { buf, type, ts } або { none: true, ts }
+const knownTg = new Set();
+const photoUrls = new Map();
+const avaCache = new Map();
 const AVA_TTL = 6 * 3600 * 1000, AVA_MISS_TTL = 20 * 60 * 1000;
 async function loadAvatar(id) {
   const c = avaCache.get(id);
@@ -98,20 +155,18 @@ async function loadAvatar(id) {
   let got = null;
   try {
     if (BOT_TOKEN) {
-      const api = `https://api.telegram.org/bot${BOT_TOKEN}`;
-      const ph = await (await fetch(`${api}/getUserProfilePhotos?user_id=${id}&limit=1`)).json();
-      const sizes = ph.ok && ph.result.photos[0];
+      const ph = await tg('getUserProfilePhotos', { user_id: +id, limit: 1 });
+      const sizes = ph && ph.photos[0];
       if (sizes && sizes.length) {
         const pick = sizes.find(z => z.width >= 150) || sizes[sizes.length - 1];
-        const f = await (await fetch(`${api}/getFile?file_id=${encodeURIComponent(pick.file_id)}`)).json();
-        if (f.ok) {
-          const r = await fetch(`https://api.telegram.org/file/bot${BOT_TOKEN}/${f.result.file_path}`);
+        const f = await tg('getFile', { file_id: pick.file_id });
+        if (f) {
+          const r = await fetch(`https://api.telegram.org/file/bot${BOT_TOKEN}/${f.file_path}`);
           if (r.ok) got = { buf: Buffer.from(await r.arrayBuffer()), type: 'image/jpeg' };
         }
       }
     }
   } catch (e) { console.log('avatar ' + id + ' (Bot API): ' + e.message); }
-  // запасний варіант: photo_url, який Telegram передав у даних міні-застосунку
   try {
     if (!got && photoUrls.has(id)) {
       const r = await fetch(photoUrls.get(id));
@@ -154,13 +209,53 @@ function checkInitData(initData) {
   } catch (e) { return null; }
 }
 
+// ---------- Статистика ----------
+let stats = {};           // id гравця → статистика (див. stats.js)
+let statsDirty = false;
+function statOf(id, name) {
+  if (!stats[id]) stats[id] = Stats.blank(name);
+  if (name) stats[id].name = name;
+  return stats[id];
+}
+function sendAch(id, ids) {
+  if (ids && ids.length) send(sockets.get(id), { t: 'ach', ids });
+}
+function statsAfterDeal(room, res) {
+  for (let p = 0; p < room.n; p++) {
+    const x = room.seats[p];
+    if (!x || x.type !== 'human') continue;
+    const st = statOf(x.id, x.name);
+    sendAch(x.id, Stats.onDeal(st, Stats.dealFacts(res, room.n, p)));
+  }
+  statsDirty = true;
+}
+function statsAfterSeries(room) {
+  const hs = room.seats.map((x, p) => x && x.type === 'human' ? { x, p } : null).filter(Boolean);
+  for (const { x, p } of hs) {
+    const st = statOf(x.id, x.name);
+    sendAch(x.id, Stats.onSeries(st, { lost: Stats.seriesLost(room.ser, p), milk: room.ser.milk }));
+    for (const o of hs) if (o.x.id !== x.id) st.friends[o.x.id] = (st.friends[o.x.id] || 0) + 1;
+  }
+  statsDirty = true;
+}
+function leaderboard(id) {
+  const me = stats[id];
+  const ids = [id, ...Object.keys(me ? me.friends : {})];
+  const row = uid => {
+    const s = stats[uid] || Stats.blank('');
+    return { me: uid === id, name: s.name || 'Гравець', ava: uid.startsWith('tg') ? '/avatar/' + uid.slice(2) : null,
+      games: s.games, wins: s.wins, goats: s.goats, milkGoats: s.milkGoats, together: me && me.friends[uid] || 0 };
+  };
+  return ids.filter((u, i) => ids.indexOf(u) === i && stats[u]).map(row)
+    .sort((a, b) => b.goats - a.goats || (b.goats / Math.max(1, b.games)) - (a.goats / Math.max(1, a.games)) || b.games - a.games);
+}
+
 // ---------- Столи ----------
-const rooms = new Map();          // код → стіл
-const userRoom = new Map();       // id гравця → код столу, за яким він зараз
-const userLast = new Map();       // id гравця → стіл, з якого він вийшов (щоб повернутися)
-const sockets = new Map();        // id гравця → WebSocket
+const rooms = new Map();
+const userRoom = new Map();
+const userLast = new Map();
+const sockets = new Map();
 const BOT_NAMES = ['Кум', 'Сват', 'Брат', 'Дядько'];
-// Код столу — 4 цифри (1000–9999), його легко ввести з цифрової клавіатури
 function newCode() {
   for (;;) {
     const c = String(1000 + Math.floor(Math.random() * 9000));
@@ -177,14 +272,23 @@ function createRoom(user, n, level, goal) {
   const room = {
     code: newCode(), n, level: AI.LEVELS[level] ? level : 'medium', goal: goal === 6 ? 6 : 12, hostId: user.id,
     seats: new Array(n).fill(null), status: 'lobby', ser: null, deal: null,
-    ev: null, evSeq: 0, result: null, rec: null, ready: new Set(), timer: null, turnTimer: null, emptySince: null,
-    chat: [], chatSeq: 0, duo: new Set(),
+    ev: null, evSeq: 0, result: null, rec: null, reveal: null, ready: new Set(), timer: null, turnTimer: null, emptySince: null,
+    chat: [], chatSeq: 0, duo: new Set(), absSig: '',
   };
   room.seats[0] = { type: 'human', id: user.id, name: user.name, connected: true };
   rooms.set(room.code, room); userRoom.set(user.id, room.code); userLast.set(user.id, room.code);
   return room;
 }
 function seatOf(room, id) { return room.seats.findIndex(x => x && x.type === 'human' && x.id === id); }
+
+// Стан гравця, якого немає: here / grace (щойно зник) / paused (гра чекає) / auto (грає бот)
+function absence(x, now) {
+  if (!x || x.type !== 'human' || x.connected) return 'here';
+  const t = (now || Date.now()) - (x.awaySince || 0);
+  return t < GRACE_MS ? 'grace' : t < AUTO_MS ? 'paused' : 'auto';
+}
+function markAway(x, now) { x.connected = false; x.awaySince = x.awaySince || now || Date.now(); }
+function markBack(x) { x.connected = true; x.awaySince = null; x.left = false; }
 
 function joinRoom(user, code) {
   const room = rooms.get(code);
@@ -193,7 +297,7 @@ function joinRoom(user, code) {
   if (cur >= 0) {
     const oldCode = userRoom.get(user.id);
     if (oldCode && oldCode !== code) leaveRoom(user.id);
-    Object.assign(room.seats[cur], { connected: true, left: false, name: user.name });
+    markBack(room.seats[cur]); room.seats[cur].name = user.name;
     room.emptySince = null; userRoom.set(user.id, code); userLast.set(user.id, code);
     return room;
   }
@@ -215,17 +319,21 @@ function leaveRoom(id) {
   const s = seatOf(room, id);
   if (s < 0) return;
   if (room.status === 'lobby') { room.seats[s] = null; userLast.delete(id); }
-  else { room.seats[s].connected = false; room.seats[s].left = true; }
-  if (room.hostId === id) { const h = humans(room).find(x => x.connected && !x.left); if (h) room.hostId = h.id; }
+  else {
+    // вийшов сам через меню: без «запасних» 45 секунд, одразу пауза
+    const x = room.seats[s]; x.left = true; x.connected = false; x.awaySince = Date.now() - GRACE_MS;
+  }
+  if (room.hostId === id) { const h = humans(room).find(x => x.connected); if (h) room.hostId = h.id; }
   if (!humans(room).some(x => x.connected)) room.emptySince = Date.now();
-  if (room.status === 'lobby' && !humans(room).length) { rooms.delete(code); return; }
+  if (room.status === 'lobby' && !humans(room).length) { rooms.delete(code); dirty(); return; }
+  checkAbsence(room);
   broadcast(room);
   schedule(room);
 }
 
-// ---------- Вид столу для конкретного гравця (свої карти бачить лише він) ----------
+// ---------- Вид столу для конкретного гравця ----------
 function viewFor(room, id) {
-  const n = room.n, s = Math.max(0, seatOf(room, id));
+  const n = room.n, s = Math.max(0, seatOf(room, id)), now = Date.now();
   const rot = p => (p - s + n) % n, unrot = r => (r + s) % n;
   const rotArr = a => a.map((_, r) => a[unrot(r)]);
   const swap = s % 2 === 1 && n === 4;
@@ -234,17 +342,20 @@ function viewFor(room, id) {
   const v = {
     t: 'room', code: room.code, n, status: room.status, level: room.level, goal: room.goal || 12,
     host: room.hostId === id, mySeat: s,
-    seats: room.seats.map((x, i) => x && { name: x.name, ava: avatarOf(x), bot: x.type === 'bot', connected: x.type === 'bot' || x.connected, me: x.type === 'human' && x.id === id, host: x.type === 'human' && x.id === room.hostId }),
+    seats: room.seats.map(x => x && { name: x.name, ava: avatarOf(x), bot: x.type === 'bot', connected: x.type === 'bot' || x.connected, me: x.type === 'human' && x.id === id, host: x.type === 'human' && x.id === room.hostId }),
     names: room.seats.map((_, r) => { const x = room.seats[unrot(r)]; return x ? x.name : ''; }),
     online: room.seats.map((_, r) => { const x = room.seats[unrot(r)]; return !x || x.type === 'bot' || x.connected; }),
+    auto: room.seats.map((_, r) => room.status !== 'lobby' && absence(room.seats[unrot(r)], now) === 'auto'),
     avas: room.seats.map((_, r) => avatarOf(room.seats[unrot(r)])),
     ready: [...room.ready].map(uid => seatOf(room, uid)).filter(i => i >= 0).map(rot),
     waiting: humans(room).filter(x => x.connected && !room.ready.has(x.id)).map(x => x.id === id ? 'ви' : x.name),
-    away: room.status === 'lobby' ? [] : room.seats.map((x, i) => x && x.type === 'human' && !x.connected ? { i, name: x.name } : null).filter(Boolean),
-    now: Date.now(), startedAt: room.startedAt || null,
+    // пауза: лише ті, кого немає довше 45 с, але ще менше 3 хв
+    away: room.status === 'lobby' ? [] : room.seats.map((x, i) => absence(x, now) === 'paused'
+      ? { i, name: x.name, autoAt: x.awaySince + AUTO_MS } : null).filter(Boolean),
+    now, startedAt: room.startedAt || null,
     canDuo: canDuo(room) && seatOf(room, id) !== room.ser.losers[0],
     deadline: room.turnDeadline || null,
-    invite: BOT_USERNAME && APP_NAME ? `https://t.me/${BOT_USERNAME}/${APP_NAME}?startapp=${room.code}` : null,
+    invite: appLink(room.code),
   };
   if (room.ser) {
     const S = room.ser;
@@ -284,17 +395,18 @@ function viewFor(room, id) {
       : { ...r, pts: rotArr(r.pts), pens: rotArr(r.pens), bases: rotArr(r.bases),
           loser: r.loser === undefined ? undefined : rot(r.loser), winners: r.winners.map(rot) };
     v.rec = { mult: room.rec.mult };
+    // після роздачі всі бачать, хто що забрав (разом зі скинутими картами)
+    if (room.reveal) v.reveal = rotArr(room.reveal);
   }
   return v;
 }
-// Стіл, до якого гравець може повернутися (він там досі має місце)
 function lastRoomFor(id) {
   const code = userLast.get(id), room = code && rooms.get(code);
   if (!room || room.status === 'lobby' || seatOf(room, id) < 0) return null;
   return { code, n: room.n };
 }
 // ---------- Чат ----------
-const lastChatAt = new Map(); // id → час останнього повідомлення (захист від флуду)
+const lastChatAt = new Map();
 function chatFor(room, id, m) {
   const s = Math.max(0, seatOf(room, id)), n = room.n;
   return { id: m.id, p: m.seat < 0 ? -1 : (m.seat - s + n) % n, name: m.name, text: m.text, ts: m.ts, mine: m.uid === id };
@@ -312,9 +424,9 @@ function postChat(room, user, text) {
   const m = { id: ++room.chatSeq, seat: s, uid: user.id, name: user.name, text, ts: now };
   room.chat.push(m); if (room.chat.length > 60) room.chat.shift();
   for (const x of humans(room)) if (x.connected) send(sockets.get(x.id), { t: 'chat', code: room.code, m: chatFor(room, x.id, m) });
+  dirty();
   return null;
 }
-// Дограти вдвох можна, якщо козел один, а в обох, хто лишився, менше 12 штрафних
 function canDuo(room) {
   if (room.n !== 3 || room.status !== 'over' || !room.ser || room.ser.losers.length !== 1) return false;
   const goat = room.ser.losers[0];
@@ -323,10 +435,10 @@ function canDuo(room) {
 function send(ws, msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
 function broadcast(room) {
   for (const x of humans(room)) if (x.connected) send(sockets.get(x.id), viewFor(room, x.id));
+  dirty();
 }
 
 // ---------- Хід гри ----------
-const TURN_MS = 60000; // на хід — 1 хвилина, далі за гравця ходить бот
 function startSeries(room) {
   room.startedAt = Date.now();
   room.ser = E.newSeries(room.n, room.goal); room.result = null; room.rec = null;
@@ -334,11 +446,10 @@ function startSeries(room) {
 }
 function startDeal(room, first) {
   room.deal = E.newDeal(rng, room.n, first, room.ser.nextStarter);
-  room.status = 'playing'; room.result = null; room.rec = null; room.ready = new Set();
+  room.status = 'playing'; room.result = null; room.rec = null; room.reveal = null; room.ready = new Set();
   room.ev = { t: 'deal', p: room.deal.attacker }; room.evSeq++;
   schedule(room, true); broadcast(room);
 }
-// Козел вибуває, двоє інших продовжують удвох зі своїми штрафними очками
 function startDuo(room, goat) {
   const out = room.seats[goat];
   const keep = room.seats.filter((_, i) => i !== goat);
@@ -361,60 +472,103 @@ function startDuo(room, goat) {
 }
 function endDeal(room) {
   const res = E.dealResult(room.deal, room.ser.mult);
+  room.reveal = room.deal.piles.map(pile => pile.map(e => [e.c, e.hidden ? 1 : 0]));
   const rec = E.applyDealToSeries(room.ser, res, room.deal.lastTrick);
   room.result = res; room.rec = rec; room.ready = new Set();
   room.status = room.ser.over ? 'over' : 'dealEnd';
+  statsAfterDeal(room, res);
+  if (room.ser.over) statsAfterSeries(room);
 }
 function doAction(room, p, a, auto) {
   clearTimeout(room.turnTimer);
+  const seat = room.seats[p];
   E.applyAction(room.deal, a);
+  if (a.type === 'intercept' && seat && seat.type === 'human' && !auto) {
+    sendAch(seat.id, Stats.onIntercept(statOf(seat.id, seat.name))); statsDirty = true;
+  }
   room.ev = { t: a.type, p, k: a.cards ? a.cards.length : 0, auto: !!auto }; room.evSeq++;
   schedule(room, true); broadcast(room);
 }
-// silent = true: виклик із місця, яке саме розішле стан; інакше розсилаємо, якщо змінився таймер ходу
 function schedule(room, silent) {
   const prev = room.turnDeadline || null;
   planTurn(room);
   if (!silent && (room.turnDeadline || null) !== prev) broadcast(room);
+}
+// Бот (або автопілот за відсутнього) думає у фоновому потоці; якщо стан за цей час змінився — хід відкидаємо
+function botMove(room, p, level, forced) {
+  const d = room.deal, key = room.evSeq;
+  if (room.thinking === key) return;
+  room.thinking = key;
+  const started = Date.now();
+  Bots.choose(d, level, rng).then(a => {
+    if (room.thinking === key) room.thinking = null;
+    if (!rooms.has(room.code) || room.deal !== d || room.evSeq !== key || E.toAct(d) !== p || room.status !== 'playing') return;
+    if (isPaused(room)) return; // після паузи planTurn попросить хід ще раз
+    const wait = Math.max(0, 650 - (Date.now() - started));
+    setTimeout(() => {
+      if (room.deal === d && room.evSeq === key && E.toAct(d) === p && room.status === 'playing') doAction(room, p, a, forced);
+    }, wait);
+  });
 }
 function planTurn(room) {
   clearTimeout(room.timer); clearTimeout(room.turnTimer);
   const keep = room.turnDeadline && room.turnKey === room.evSeq ? room.turnDeadline : null;
   room.turnDeadline = null;
   if (room.status !== 'playing') return;
-  if (isPaused(room)) { room.turnKey = null; return; } // хтось із людей вийшов — гра стоїть, доки не повернеться
+  if (isPaused(room)) { room.turnKey = null; return; }
   const d = room.deal;
   if (d.phase === 'resolve') {
     room.timer = setTimeout(() => {
+      if (room.deal !== d || d.phase !== 'resolve') return;
       const w = E.finishTrick(d);
       room.ev = { t: 'collected', p: w }; room.evSeq++;
       if (d.phase === 'dealEnd') endDeal(room);
       schedule(room, true); broadcast(room);
+      if (room.status !== 'playing') maybeContinue(room);
     }, 1500);
     return;
   }
   if (d.phase === 'dealEnd') return;
   const p = E.toAct(d), seat = room.seats[p];
-  const auto = (level, forced) => () => { if (room.deal === d && E.toAct(d) === p) doAction(room, p, AI.chooseAction(d, level, rng), forced); };
-  if (seat.type === 'bot') { room.timer = setTimeout(auto(seat.level), 650); return; }
-  // людина: 1 хвилина на хід (якщо стан не змінився — таймер не скидаємо)
+  if (seat.type === 'bot') { botMove(room, p, seat.level); return; }
+  if (absence(seat) === 'auto') { botMove(room, p, room.level, true); return; }
   room.turnDeadline = keep || Date.now() + TURN_MS;
   room.turnKey = room.evSeq;
-  room.turnTimer = setTimeout(auto('medium', true), Math.max(0, room.turnDeadline - Date.now()));
+  room.turnTimer = setTimeout(() => {
+    if (room.deal === d && E.toAct(d) === p) botMove(room, p, 'medium', true);
+  }, Math.max(0, room.turnDeadline - Date.now()));
 }
-function isPaused(room) { return room.status !== 'lobby' && humans(room).some(x => !x.connected); }
+function isPaused(room) { return room.status !== 'lobby' && room.seats.some(x => absence(x) === 'paused'); }
 function maybeContinue(room) {
   if (room.status !== 'dealEnd' && room.status !== 'over') return;
   if (isPaused(room)) { broadcast(room); return; }
-  const need = humans(room);
-  if (!need.length) return;
+  // ті, за кого грає бот, «готові» автоматично; хто щойно зник (до 45 с) — чекаємо
+  const need = humans(room).filter(x => absence(x) !== 'auto');
+  if (!humans(room).some(x => x.connected)) return;
   if (need.every(x => room.ready.has(x.id))) {
     if (room.status === 'over') startSeries(room); else startDeal(room, false);
   } else broadcast(room);
 }
+// Переходи «зник → пауза → бот» відстежуємо раз на кілька секунд
+function checkAbsence(room) {
+  if (room.status === 'lobby') { room.absSig = ''; return false; }
+  const now = Date.now();
+  const sig = room.seats.map(x => absence(x, now)[0]).join('');
+  if (sig === room.absSig) return false;
+  const prev = room.absSig || '';
+  room.absSig = sig;
+  room.seats.forEach((x, i) => {
+    if (!x || x.type !== 'human') return;
+    const was = prev[i], st = sig[i];
+    if (st === 'p' && was !== 'p') notify(x.id, `«Боярський козел»: вас чекають за столом ${room.code}. Гру зупинено, поки ви не повернетесь.`, room.code, true);
+    if (st === 'a' && was !== 'a') notify(x.id, `За столом ${room.code} за вас тимчасово грає бот. Поверніться будь-коли — продовжите самі.`, room.code, true);
+  });
+  return true;
+}
 
 // ---------- Повідомлення від гравців ----------
 function sameCards(a, b) { return a.length === b.length && a.every(c => b.includes(c)); }
+const seatIdx = (room, i) => Number.isInteger(i) && i >= 0 && i < room.seats.length ? i : -1;
 function handle(ws, user, m) {
   const code = userRoom.get(user.id), room = code && rooms.get(code);
   switch (m.t) {
@@ -426,27 +580,38 @@ function handle(ws, user, m) {
       return;
     }
     case 'join': {
-      const r = joinRoom(user, String(m.code || '').replace(/\D/g, ''));
+      const r = joinRoom(user, String(m.code || '').replace(/\D/g, '').slice(0, 4));
       if (typeof r === 'string') return send(ws, { t: 'error', msg: r });
-      broadcast(r); sendChatHistory(r, user.id); schedule(r); maybeContinue(r);
+      checkAbsence(r); broadcast(r); sendChatHistory(r, user.id); schedule(r); maybeContinue(r);
       return;
     }
-    case 'leave': { const c = userRoom.get(user.id); leaveRoom(user.id); send(ws, { t: 'left', lastRoom: lastRoomFor(user.id) }); return; }
+    case 'leave': { leaveRoom(user.id); send(ws, { t: 'left', lastRoom: lastRoomFor(user.id) }); return; }
+    case 'stats': {
+      send(ws, { t: 'stats', me: stats[user.id] || Stats.blank(user.name), board: leaderboard(user.id) });
+      return;
+    }
+    case 'share': return shareImage(ws, user, m);
   }
   if (!room) return send(ws, { t: 'error', msg: 'Ви не за столом.' });
   const s = seatOf(room, user.id), isHost = room.hostId === user.id;
   switch (m.t) {
-    case 'seat': // пересісти на вільне місце (лише в лобі)
-      if (room.status === 'lobby' && room.seats[m.i] === null) { room.seats[m.i] = room.seats[s]; room.seats[s] = null; broadcast(room); }
+    case 'seat': {
+      const i = seatIdx(room, m.i);
+      if (i >= 0 && s >= 0 && room.status === 'lobby' && room.seats[i] === null) { room.seats[i] = room.seats[s]; room.seats[s] = null; broadcast(room); }
       return;
-    case 'bot':
-      if (isHost && room.status === 'lobby' && room.seats[m.i] === null) {
-        room.seats[m.i] = { type: 'bot', level: room.level, name: botName(room) }; broadcast(room);
+    }
+    case 'bot': {
+      const i = seatIdx(room, m.i);
+      if (i >= 0 && isHost && room.status === 'lobby' && room.seats[i] === null) {
+        room.seats[i] = { type: 'bot', level: room.level, name: botName(room) }; broadcast(room);
       }
       return;
-    case 'unbot':
-      if (isHost && room.status === 'lobby' && room.seats[m.i] && room.seats[m.i].type === 'bot') { room.seats[m.i] = null; broadcast(room); }
+    }
+    case 'unbot': {
+      const i = seatIdx(room, m.i);
+      if (i >= 0 && isHost && room.status === 'lobby' && room.seats[i] && room.seats[i].type === 'bot') { room.seats[i] = null; broadcast(room); }
       return;
+    }
     case 'goal':
       if (isHost && room.status === 'lobby' && (m.goal === 6 || m.goal === 12)) { room.goal = m.goal; broadcast(room); }
       return;
@@ -464,13 +629,14 @@ function handle(ws, user, m) {
       const a = m.a || {};
       const legal = E.legalActions(room.deal).find(x => x.type === a.type && (!x.cards || (Array.isArray(a.cards) && sameCards(x.cards, a.cards))));
       if (!legal) return send(ws, { t: 'error', msg: 'Такий хід неможливий.' });
+      room.thinking = null;
       doAction(room, s, legal);
       return;
     }
     case 'ready':
       room.ready.add(user.id); maybeContinue(room);
       return;
-    case 'duo': { // на трьох: двоє, що лишилися, догравають удвох
+    case 'duo': {
       if (!canDuo(room)) return;
       const goat = room.ser.losers[0];
       if (s < 0 || s === goat) return;
@@ -485,18 +651,78 @@ function handle(ws, user, m) {
       if (err) send(ws, { t: 'error', msg: err });
       return;
     }
-    case 'replace': { // господар садить бота замість гравця, який не повертається
-      const x = room.seats[m.i];
+    case 'replace': {
+      const i = seatIdx(room, m.i), x = i >= 0 ? room.seats[i] : null;
       if (!isHost || room.status === 'lobby' || !x || x.type !== 'human' || x.connected) return;
       userRoom.delete(x.id); userLast.delete(x.id); room.ready.delete(x.id);
-      room.seats[m.i] = { type: 'bot', level: room.level, name: botName(room) };
-      broadcast(room); schedule(room); maybeContinue(room);
+      room.seats[i] = { type: 'bot', level: room.level, name: botName(room) };
+      checkAbsence(room); broadcast(room); schedule(room); maybeContinue(room);
       return;
     }
   }
 }
 
-const wss = new WebSocketServer({ server, path: '/ws' });
+// ---------- «Поділитися результатом» ----------
+// Сторінка малює картинку, сервер тримає її 24 год і готує повідомлення для кнопки «Поділитися» в Telegram
+async function shareImage(ws, user, m) {
+  const mm = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(m.img || ''));
+  if (!mm) return send(ws, { t: 'shareReady', err: 'Не вдалося підготувати картинку.' });
+  const buf = Buffer.from(mm[1], 'base64');
+  if (buf.length > 600 * 1024) return send(ws, { t: 'shareReady', err: 'Картинка завелика.' });
+  const id = crypto.randomBytes(9).toString('hex');
+  shares.set(id, { buf, ts: Date.now() });
+  if (shares.size > 200) shares.delete(shares.keys().next().value);
+  const url = PUBLIC_URL ? `${PUBLIC_URL}/share/${id}.jpg` : null;
+  let prepared = null;
+  const caption = String(m.text || '').slice(0, 900);
+  if (url && user.id.startsWith('tg')) {
+    const link = appLink();
+    const r = await tg('savePreparedInlineMessage', {
+      user_id: +user.id.slice(2),
+      result: { type: 'photo', id, photo_url: url, thumbnail_url: url, caption: caption + (link ? `\n\nГрай: ${link}` : '') },
+      allow_user_chats: true, allow_bot_chats: true, allow_group_chats: true, allow_channel_chats: true,
+    });
+    if (r) prepared = r.id;
+  }
+  send(ws, { t: 'shareReady', url, prepared, link: appLink() });
+}
+
+// ---------- Бот у Telegram: /start, /stats, /help ----------
+async function onWebhook(req, res) {
+  if (req.headers['x-telegram-bot-api-secret-token'] !== WEBHOOK_SECRET) { res.writeHead(403); res.end(); return; }
+  let upd;
+  try { upd = JSON.parse((await readBody(req, 256 * 1024)).toString('utf8')); } catch (e) { res.writeHead(400); res.end(); return; }
+  res.writeHead(200); res.end('ok');
+  const msg = upd.message;
+  if (!msg || !msg.text || !msg.chat || msg.chat.type !== 'private') return;
+  const uid = 'tg' + msg.from.id;
+  const [cmd, arg] = msg.text.trim().split(/\s+/);
+  const link = appLink();
+  const playBtn = code => ({ inline_keyboard: [[{ text: code ? `Сісти за стіл ${code}` : '🃏 Грати', url: appLink(code) || link }]] });
+  if (/^\/stats/.test(cmd)) {
+    const s = stats[uid];
+    const text = s && s.games
+      ? `Ваша статистика онлайн:\nПартій: ${s.games}\nПеремог: ${s.wins}\nКозел: ${s.goats} (молочний: ${s.milkGoats})\nНайкраща серія: ${s.bestStreak}\nНагород: ${Object.keys(s.ach).length} з ${Stats.ACH.length}`
+      : 'Ви ще не зіграли жодної онлайн-партії.';
+    tg('sendMessage', { chat_id: msg.chat.id, text, reply_markup: link ? playBtn() : undefined });
+    return;
+  }
+  if (/^\/help/.test(cmd)) {
+    tg('sendMessage', { chat_id: msg.chat.id, text: 'Боярський козел — карткова гра на 2, 3 або 4 гравці (пара на пару). Грайте з ботами або створіть стіл і надішліть друзям запрошення. Правила — у меню гри.\n\n/stats — ваша статистика', reply_markup: link ? playBtn() : undefined });
+    return;
+  }
+  if (/^\/start/.test(cmd)) {
+    const code = /^\d{4}$/.test(arg || '') ? arg : null;
+    tg('sendMessage', {
+      chat_id: msg.chat.id,
+      text: '🐐 «Боярський козел»\n\nГрайте з ботами або з друзями онлайн. Тут бот повідомлятиме, коли вас чекають за столом.\n\n/stats — ваша статистика\n/help — коротко про гру',
+      reply_markup: link ? playBtn(code) : undefined,
+    });
+  }
+}
+
+// ---------- З'єднання ----------
+const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 1024 * 1024 });
 wss.on('connection', ws => {
   let user = null;
   ws.isAlive = true;
@@ -513,16 +739,18 @@ wss.on('connection', ws => {
       const old = sockets.get(user.id);
       if (old && old !== ws) old.close();
       sockets.set(user.id, ws);
+      if (stats[user.id]) stats[user.id].name = user.name;
       send(ws, { t: 'welcome', me: user, lastRoom: userRoom.has(user.id) ? null : lastRoomFor(user.id) });
       const code = userRoom.get(user.id), room = code && rooms.get(code);
       if (room) {
         const s = seatOf(room, user.id);
-        if (s >= 0) { room.seats[s].connected = true; room.seats[s].left = false; room.emptySince = null; }
-        broadcast(room); sendChatHistory(room, user.id); schedule(room); maybeContinue(room);
+        if (s >= 0) { markBack(room.seats[s]); room.emptySince = null; }
+        checkAbsence(room); broadcast(room); sendChatHistory(room, user.id); schedule(room); maybeContinue(room);
       }
       if (m.join) {
-        const r = joinRoom(user, String(m.join).replace(/\D/g, ''));
-        if (typeof r === 'string') send(ws, { t: 'error', msg: r }); else { broadcast(r); sendChatHistory(r, user.id); schedule(r); maybeContinue(r); }
+        const r = joinRoom(user, String(m.join).replace(/\D/g, '').slice(0, 4));
+        if (typeof r === 'string') send(ws, { t: 'error', msg: r });
+        else { checkAbsence(r); broadcast(r); sendChatHistory(r, user.id); schedule(r); maybeContinue(r); }
       }
       return;
     }
@@ -536,22 +764,108 @@ wss.on('connection', ws => {
     const s = seatOf(room, user.id);
     if (s < 0) return;
     if (room.status === 'lobby') { leaveRoom(user.id); return; }
-    room.seats[s].connected = false;
+    markAway(room.seats[s]);
     if (!humans(room).some(x => x.connected)) room.emptySince = Date.now();
-    broadcast(room); schedule(room);
+    checkAbsence(room); broadcast(room); schedule(room);
   });
 });
 
-// Перевірка зв'язку та прибирання покинутих столів
+// ---------- Збереження столів і статистики ----------
+let roomsDirty = false;
+function dirty() { roomsDirty = true; }
+function packRoom(r) {
+  return {
+    code: r.code, n: r.n, level: r.level, goal: r.goal, hostId: r.hostId, status: r.status,
+    seats: r.seats.map(x => x && { ...x }), ser: r.ser, deal: r.deal ? E.packState(r.deal) : null,
+    ev: r.ev, evSeq: r.evSeq, result: r.result, rec: r.rec, reveal: r.reveal, ready: [...r.ready],
+    chat: r.chat, chatSeq: r.chatSeq, duo: [...r.duo], startedAt: r.startedAt || null, emptySince: r.emptySince,
+  };
+}
+function unpackRoom(o) {
+  const now = Date.now();
+  const room = { ...o, deal: o.deal ? E.unpackState(o.deal) : null, ready: new Set(o.ready), duo: new Set(o.duo),
+    timer: null, turnTimer: null, turnDeadline: null, absSig: '', thinking: null };
+  // після перезапуску всі люди «щойно зникли» — у них є звичайний час повернутися
+  for (const x of room.seats) if (x && x.type === 'human') {
+    x.connected = false; x.awaySince = now;
+    if (x.id.startsWith('tg')) knownTg.add(x.id.slice(2));
+  }
+  room.emptySince = now;
+  return room;
+}
+async function saveRooms() {
+  if (!roomsDirty) return;
+  roomsDirty = false;
+  await Store.set('rooms', [...rooms.values()].filter(r => r.status !== 'lobby').map(packRoom));
+}
+async function saveStats() {
+  if (!statsDirty) return;
+  statsDirty = false;
+  await Store.set('stats', stats);
+}
+async function restore() {
+  const st = await Store.get('stats');
+  if (st && typeof st === 'object') stats = st;
+  for (const id of Object.keys(stats)) if (id.startsWith('tg')) knownTg.add(id.slice(2));
+  const list = await Store.get('rooms');
+  if (Array.isArray(list)) for (const o of list) {
+    try {
+      const room = unpackRoom(o);
+      rooms.set(room.code, room);
+      for (const x of room.seats) if (x && x.type === 'human') { userRoom.set(x.id, room.code); userLast.set(x.id, room.code); }
+      checkAbsence(room);
+    } catch (e) { console.log('Не вдалося відновити стіл ' + (o && o.code) + ': ' + e.message); }
+  }
+  if (rooms.size) console.log(`Відновлено столів: ${rooms.size} (сховище: ${Store.kind})`);
+}
+
+setInterval(() => { saveRooms(); saveStats(); }, 3000);
+async function shutdown() {
+  roomsDirty = true; statsDirty = true;
+  try { await Promise.race([Promise.all([saveRooms(), saveStats()]), new Promise(r => setTimeout(r, 4000))]); } catch (e) {}
+  Store.flushFile();
+  process.exit(0);
+}
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
+// Раз на 3 с: переходи відсутності (пауза / бот), таймери
+setInterval(() => {
+  for (const room of rooms.values()) {
+    if (checkAbsence(room)) { broadcast(room); schedule(room); maybeContinue(room); }
+  }
+}, 1500);
+// Перевірка зв'язку та прибирання покинутих столів і картинок
 setInterval(() => {
   for (const ws of wss.clients) { if (!ws.isAlive) { ws.terminate(); continue; } ws.isAlive = false; ws.ping(); }
+  const now = Date.now();
   for (const [code, room] of rooms) {
-    if (room.emptySince && Date.now() - room.emptySince > 15 * 60 * 1000) {
+    if (room.emptySince && now - room.emptySince > EMPTY_TTL) {
       clearTimeout(room.timer); clearTimeout(room.turnTimer);
       for (const x of humans(room)) { if (userRoom.get(x.id) === code) userRoom.delete(x.id); if (userLast.get(x.id) === code) userLast.delete(x.id); }
-      rooms.delete(code);
+      rooms.delete(code); dirty();
     }
   }
+  for (const [id, x] of shares) if (now - x.ts > 86400000) shares.delete(id);
+  for (const [id, t] of lastChatAt) if (now - t > 3600000) lastChatAt.delete(id);
 }, 25000);
 
-server.listen(PORT, () => console.log('Боярський козел слухає порт ' + PORT + (ALLOW_GUESTS ? ' (гості дозволені)' : '')));
+// Безкоштовний Render «засинає» після 15 хв без запитів — стукаємо самі до себе раз на 10 хв
+if (KEEP_AWAKE && PUBLIC_URL) {
+  setInterval(() => { fetch(PUBLIC_URL + '/health').catch(() => {}); }, 10 * 60 * 1000);
+  console.log('Самопінг увімкнено: ' + PUBLIC_URL + '/health кожні 10 хв');
+}
+
+restore().then(() => {
+  server.listen(PORT, () => {
+    console.log('Боярський козел слухає порт ' + PORT + (ALLOW_GUESTS ? ' (гості дозволені)' : '') + ', сховище: ' + Store.kind);
+    for (const room of rooms.values()) schedule(room, true);
+    if (BOT_TOKEN && PUBLIC_URL && process.env.WEBHOOK !== '0') {
+      tg('setWebhook', { url: PUBLIC_URL + '/tg/webhook', secret_token: WEBHOOK_SECRET, allowed_updates: ['message'] })
+        .then(r => r && console.log('Вебхук бота встановлено'));
+      tg('setMyCommands', { commands: [
+        { command: 'start', description: 'Грати' }, { command: 'stats', description: 'Моя статистика' }, { command: 'help', description: 'Про гру' },
+      ] });
+    }
+  });
+});

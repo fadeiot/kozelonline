@@ -302,6 +302,77 @@ body.m4 #app{--cw:min(22vw,100px)}
 .joinrow input{flex:1;min-width:0;min-height:50px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.15);color:var(--ink);
   font:600 1.25rem var(--sans);letter-spacing:.3em;text-align:center;padding:0 12px}
 .joinrow .btn{flex:none;width:auto;padding:0 18px}
+
+/* ===== Сукно столу та сорочки (налаштування) ===== */
+:root[data-table="green"]{--wood-1:#2f6b45;--wood-2:#173723;--wood-grain:rgba(255,255,255,.025);--ink:#eef3ea;--ink-muted:#b5c8b8;--line:rgba(238,243,234,.16);--sheet:#15271b;--btn:#244131;--brass-ink:#1b150d}
+:root[data-table="blue"]{--wood-1:#2d5376;--wood-2:#152a40;--wood-grain:rgba(255,255,255,.025);--ink:#eaf0f6;--ink-muted:#b0c1d3;--line:rgba(234,240,246,.16);--sheet:#132234;--btn:#233d57;--brass-ink:#1b150d}
+:root[data-back="blue"]{--back-1:#1f4a7a;--back-2:#153659}
+:root[data-back="green"]{--back-1:#2a6a45;--back-2:#1c4a30}
+:root[data-back="black"]{--back-1:#2b2724;--back-2:#171412}
+/* повний екран у Telegram: не залазимо під годинник і кнопки Telegram */
+body.tg-fs #app{padding-top:calc(10px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
+body.tg-fs .toast{top:calc(12px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
+/* ===== Взятки після роздачі ===== */
+.reveal{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.reveal h3{font-family:var(--serif);font-size:1.05rem;margin:0}
+.rv-row{border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.rv-head{display:flex;justify-content:space-between;font-size:.85rem;color:var(--ink-muted);margin-bottom:6px}
+.rv-head b{color:var(--ink);font-family:var(--serif);font-size:1rem}
+.rv-cards{display:flex;flex-wrap:wrap;gap:4px}
+.rc{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:26px;padding:0 5px;border-radius:5px;background:var(--face);color:var(--black);
+  font:700 .82rem var(--serif);border:1px solid var(--face-edge);gap:1px}
+.rc.red{color:var(--red)}
+.rc.zero{opacity:.55;font-weight:500}
+.rc.trump{box-shadow:inset 0 0 0 1.5px var(--brass)}
+.rc.disc{border:1.5px dashed var(--ink-muted);background:transparent;color:var(--ink)}
+.rc.disc.red{color:#e0786d}
+.rv-legend{font-size:.75rem;color:var(--ink-muted);margin:2px 0 0}
+.rv-empty{font-size:.82rem;color:var(--ink-muted)}
+/* ===== Статистика, рейтинг, нагороди ===== */
+.tabs{display:flex;gap:6px;margin:10px 0 4px}
+.tabs .btn{min-height:40px;font-size:.9rem}
+.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.statgrid div{border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center;font-size:.75rem;color:var(--ink-muted)}
+.statgrid b{display:block;font-family:var(--serif);font-size:1.35rem;color:var(--ink)}
+.lb{width:100%;border-collapse:collapse;margin-top:8px;font-size:.9rem}
+.lb th{font-weight:400;color:var(--ink-muted);font-size:.72rem;text-align:right;padding:4px 4px}
+.lb th:nth-child(2),.lb td:nth-child(2){text-align:left}
+.lb td{padding:7px 4px;border-top:1px solid var(--line);text-align:right;vertical-align:middle}
+.lb td:first-child,.lb th:first-child{text-align:center;width:26px}
+.lb tr.me td{color:var(--brass);font-weight:600}
+.lb .nmx{display:flex;align-items:center;max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.achs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.ach{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;gap:10px;align-items:flex-start}
+.ach i{font-style:normal;font-size:1.6rem;line-height:1}
+.ach b{display:block;font-size:.9rem}
+.ach span{font-size:.75rem;color:var(--ink-muted);line-height:1.3}
+.ach.locked{opacity:.42}
+.ach.locked i{filter:grayscale(1)}
+.ach-toast[hidden]{display:none}
+.ach-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:21;background:var(--brass);color:var(--brass-ink);
+  padding:12px 18px;border-radius:14px;font-weight:600;box-shadow:0 10px 26px rgba(0,0,0,.4);display:flex;gap:10px;align-items:center;animation:bub .3s ease-out;max-width:90vw}
+.ach-toast i{font-style:normal;font-size:1.6rem}
+.ach-toast small{display:block;font-weight:400;font-size:.8rem}
+/* ===== Налаштування ===== */
+.setrow{margin-top:12px}
+.setrow .menu-lbl{margin:0 0 6px}
+.setrow .row .btn{min-height:42px;font-size:.88rem;padding:0 6px}
+.swatch{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:5px;border:1px solid rgba(255,255,255,.35)}
+.menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.menu-grid .btn{min-height:58px;font-size:.82rem;line-height:1.2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px}
+.menu-grid .btn i{font-style:normal;font-size:1.25rem}
+/* ===== Підказка й навчання ===== */
+.btn.hint{flex:none;width:46px;padding:0;font-size:1.15rem}
+.actions .btn{min-width:0;padding:0 6px;line-height:1.2}
+.row.two{display:grid;grid-template-columns:1fr 1fr}
+.tut{position:relative;flex:none;background:var(--sheet);color:var(--ink);
+  border:1.5px solid var(--brass);border-radius:14px;padding:10px 14px;font-size:.92rem;line-height:1.45;box-shadow:0 10px 24px rgba(0,0,0,.45)}
+.tut[hidden]{display:none}
+.tut b.t{display:block;font-family:var(--serif);font-size:1.05rem;margin-bottom:2px;color:var(--brass)}
+.tut .err{color:#ff8a7a;display:block;margin-top:4px}
+.tut{padding-right:34px}
+.tut .x{position:absolute;right:6px;top:4px;background:none;border:0;color:var(--ink-muted);font-size:1rem;cursor:pointer;padding:6px}
+.share-prev{display:block;width:100%;max-width:300px;margin:10px auto 0;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.4)}
 </style>
 </head>
 <body>
@@ -328,6 +399,7 @@ body.m4 #app{--cw:min(22vw,100px)}
     <button class="icon" id="musicBtn" aria-label="Фонова музика" aria-pressed="true">♫</button>
     <button class="icon" id="menuBtn" aria-label="Меню">☰</button>
   </header>
+  <div class="tut" id="tut" role="status" hidden></div>
   <section class="opp" id="opp"></section>
   <section class="middle">
     <div class="stock" id="stock"></div>
@@ -356,6 +428,7 @@ body.m4 #app{--cw:min(22vw,100px)}
 <div class="toast" id="toast" role="alert" hidden></div>
 <div class="pause" id="pause" role="alertdialog" aria-live="assertive" hidden></div>
 <div class="goat-wrap" id="goatWrap" hidden></div>
+<div class="ach-toast" id="achToast" role="status" hidden></div>
 <div class="chat" id="chat" hidden>
   <div class="chat-card" role="dialog" aria-label="Чат столу">
     <div class="chat-head"><b id="chatTitle">Чат столу</b><button class="icon" id="chatClose" aria-label="Закрити чат">✕</button></div>
@@ -364,486 +437,14 @@ body.m4 #app{--cw:min(22vw,100px)}
     <div class="chat-input"><input id="chatIn" maxlength="200" placeholder="Повідомлення…" autocomplete="off" enterkeyhint="send" aria-label="Повідомлення"><button class="btn primary" id="chatSend" aria-label="Надіслати">➤</button></div>
   </div>
 </div>
-<script>
-// ===== Боярський козел: рушій гри (2 або 3 гравці) =====
-// Карта = число 0..35: масть = c/9|0, ранг = c%9
-// Порядок старшинства (ранг 0..8): 6 7 8 9 В Д К 10 Т
-const SUIT_SYM = ['♠', '♣', '♥', '♦'];
-const SUIT_NAME = ['піки', 'трефи', 'чирва', 'бубни'];
-const RANK_LABEL = ['6', '7', '8', '9', 'В', 'Д', 'К', '10', 'Т'];
-const PTS = [0, 0, 0, 0, 2, 3, 4, 10, 11];
-const suitOf = c => (c / 9) | 0;
-const rankOf = c => c % 9;
-const ptsOf = c => PTS[c % 9];
-const cardLabel = c => RANK_LABEL[rankOf(c)] + SUIT_SYM[suitOf(c)];
-
-function mulberry32(a) {
-  return function () {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-function shuffle(arr, rng) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
-  }
-  return arr;
-}
-
-function beats(d, a, trump) {
-  const sd = suitOf(d), sa = suitOf(a);
-  if (sd === sa) return rankOf(d) > rankOf(a);
-  return sd === trump;
-}
-// Пари: res[i] — карта, що б'є att[i]; null, якщо так побити не можна
-function matchCover(att, def, trump) {
-  if (att.length !== def.length) return null;
-  const used = new Array(def.length).fill(false), res = [];
-  const rec = i => {
-    if (i === att.length) return true;
-    for (let j = 0; j < def.length; j++) {
-      if (!used[j] && beats(def[j], att[i], trump)) {
-        used[j] = true; res[i] = def[j];
-        if (rec(i + 1)) return true;
-        used[j] = false;
-      }
-    }
-    return false;
-  };
-  return rec(0) ? res : null;
-}
-const canCover = (att, def, trump) => matchCover(att, def, trump) !== null;
-function isUniform(cards) {
-  if (cards.length <= 1) return true;
-  const s = suitOf(cards[0]), r = rankOf(cards[0]);
-  return cards.every(c => suitOf(c) === s) || cards.every(c => rankOf(c) === r);
-}
-function isCombo(hand) { return hand.length === 4 && isUniform(hand); }
-function subsets(arr) {
-  const out = [], n = arr.length;
-  for (let m = 1; m < (1 << n); m++) {
-    const s = [];
-    for (let i = 0; i < n; i++) if (m & (1 << i)) s.push(arr[i]);
-    out.push(s);
-  }
-  return out;
-}
-function subsetsOfSize(arr, k) { return subsets(arr).filter(s => s.length === k); }
-
-// Пара на пару: команди 0-2 та 1-3
-const teamOf = (n, p) => n === 4 ? p % 2 : p;
-const teamCount = n => n === 4 ? 2 : n;
-
-// Захисники по черзі (за годинниковою стрілкою від атакуючого)
-function defendersFrom(n, p) { const r = []; for (let i = 1; i < n; i++) r.push((p + i) % n); return r; }
-
-// ---------- Роздача ----------
-function newDeal(rng, n, firstDeal, starter) {
-  const deck = shuffle([...Array(36).keys()], rng);
-  const hands = Array.from({ length: n }, () => []);
-  for (let r = 0; r < 4; r++) for (let p = 0; p < n; p++) hands[p].push(deck.pop());
-  const stock = deck; // stock[0] — верх, stock[last] — козир, що світить
-  let trumpCard = stock[stock.length - 1], trump = suitOf(trumpCard), trumpChanges = 0;
-  let attacker = starter;
-  if (firstDeal) {
-    for (;;) {
-      let best = null, bestP = -1;
-      for (let p = 0; p < n; p++) for (const c of hands[p])
-        if (suitOf(c) === trump && (best === null || rankOf(c) < rankOf(best))) { best = c; bestP = p; }
-      if (bestP >= 0) { attacker = bestP; break; }
-      shuffle(stock, rng);
-      trumpCard = stock[stock.length - 1]; trump = suitOf(trumpCard); trumpChanges++;
-    }
-  }
-  return {
-    n, trump, trumpCard, stock, hands,
-    piles: Array.from({ length: n }, () => []), // {c, hidden, by}
-    attacker, phase: 'attack', table: null, lastTrick: null, trumpHolder: null,
-    known: Array.from({ length: n }, () => new Map()),     // карта -> власник (у чужій руці), відомо гравцю p
-    knownHidden: Array.from({ length: n }, () => new Set()), // закриті карти, які p знає
-    trumpChanges,
-  };
-}
-
-function cloneTable(t) {
-  if (!t) return null;
-  return {
-    attack: t.attack.slice(), by: t.by, top: t.top.slice(), topBy: t.topBy,
-    layers: t.layers.map(l => ({ p: l.p, type: l.type, cards: l.cards.slice() })),
-    queue: t.queue.slice(), interceptQueue: t.interceptQueue.slice(),
-    intercepted: t.intercepted, attackerWasCombo: t.attackerWasCombo,
-  };
-}
-function cloneState(s) {
-  return {
-    n: s.n, trump: s.trump, trumpCard: s.trumpCard, stock: s.stock.slice(),
-    hands: s.hands.map(h => h.slice()),
-    piles: s.piles.map(pl => pl.map(e => ({ c: e.c, hidden: e.hidden, by: e.by }))),
-    attacker: s.attacker, phase: s.phase, table: cloneTable(s.table),
-    lastTrick: s.lastTrick, trumpHolder: s.trumpHolder,
-    known: s.known.map(m => new Map(m)), knownHidden: s.knownHidden.map(x => new Set(x)),
-    trumpChanges: s.trumpChanges,
-  };
-}
-
-function toAct(s) {
-  if (s.phase === 'attack') return s.attacker;
-  if (s.phase === 'intercept') return s.table.interceptQueue[0];
-  if (s.phase === 'defend') return s.table.queue[0];
-  return -1; // 'resolve' або 'dealEnd'
-}
-
-// У грі на двох перехоплення — одна з дій захисника
-function canIntercept(s) {
-  if (s.n !== 2 || s.phase !== 'defend' || s.table.intercepted || s.table.attackerWasCombo) return false;
-  if (s.table.layers.length) return false;
-  return isCombo(s.hands[toAct(s)]);
-}
-
-function legalActions(s) {
-  const p = toAct(s);
-  if (p < 0) return [];
-  const hand = s.hands[p];
-  const acts = [];
-  if (s.phase === 'attack') {
-    for (const sub of subsets(hand)) if (isUniform(sub)) acts.push({ type: 'attack', cards: sub });
-    return acts;
-  }
-  if (s.phase === 'intercept') return [{ type: 'intercept' }, { type: 'pass' }];
-  const top = s.table.top;
-  if (canIntercept(s)) acts.push({ type: 'intercept' });
-  const subs = subsetsOfSize(hand, top.length);
-  for (const sub of subs) if (canCover(top, sub, s.trump)) acts.push({ type: 'cover', cards: sub });
-  for (const sub of subs) acts.push({ type: 'discard', cards: sub });
-  return acts;
-}
-
-function removeCards(hand, cards) {
-  for (const c of cards) {
-    const i = hand.indexOf(c);
-    if (i < 0) throw new Error('Карти ' + cardLabel(c) + ' немає в руці');
-    hand.splice(i, 1);
-  }
-}
-function forgetPlayed(s, cards) { for (const m of s.known) for (const c of cards) m.delete(c); }
-
-function startDefense(s) {
-  const t = s.table;
-  t.queue = defendersFrom(s.n, t.by);
-  s.phase = 'defend';
-}
-
-function applyAction(s, a) {
-  const p = toAct(s);
-  if (p < 0) throw new Error('Зараз ніхто не ходить');
-  if (a.type === 'attack') {
-    if (s.phase !== 'attack') throw new Error('Зараз не атака');
-    if (!a.cards.length || !isUniform(a.cards)) throw new Error('Неприпустимий хід');
-    const wasCombo = isCombo(s.hands[p]);
-    removeCards(s.hands[p], a.cards);
-    forgetPlayed(s, a.cards);
-    s.table = { attack: a.cards.slice(), by: p, top: a.cards.slice(), topBy: null, layers: [],
-      queue: [], interceptQueue: [], intercepted: false, attackerWasCombo: wasCombo };
-    if (s.n > 2 && !wasCombo) {
-      const elig = defendersFrom(s.n, p).filter(q => isCombo(s.hands[q]));
-      if (elig.length) { s.table.interceptQueue = elig; s.phase = 'intercept'; return; }
-    }
-    startDefense(s);
-    return;
-  }
-  if (a.type === 'pass') {
-    if (s.phase !== 'intercept') throw new Error('Нема чого пропускати');
-    s.table.interceptQueue.shift();
-    if (!s.table.interceptQueue.length) startDefense(s);
-    return;
-  }
-  if (a.type === 'intercept') {
-    if (!(s.phase === 'intercept' || canIntercept(s))) throw new Error('Перехоплення неможливе');
-    const t = s.table, back = t.attack;
-    s.hands[t.by].push(...back);
-    for (let q = 0; q < s.n; q++) if (q !== t.by) for (const c of back) s.known[q].set(c, t.by);
-    const combo = s.hands[p].slice();
-    s.hands[p] = [];
-    forgetPlayed(s, combo);
-    s.table = { attack: combo, by: p, top: combo.slice(), topBy: null, layers: [],
-      queue: [], interceptQueue: [], intercepted: true, attackerWasCombo: true, returned: back.slice(), returnedTo: t.by };
-    s.attacker = p;
-    startDefense(s);
-    return;
-  }
-  if (s.phase !== 'defend') throw new Error('Зараз не захист');
-  const t = s.table;
-  if (a.cards.length !== t.top.length) throw new Error('Потрібно ' + t.top.length + ' карт');
-  if (a.type === 'cover') {
-    const m = matchCover(t.top, a.cards, s.trump);
-    if (!m) throw new Error('Цими картами не побити');
-    removeCards(s.hands[p], a.cards);
-    forgetPlayed(s, a.cards);
-    t.layers.push({ p, type: 'cover', cards: m });
-    t.top = m; t.topBy = p;
-  } else if (a.type === 'discard') {
-    removeCards(s.hands[p], a.cards);
-    for (let q = 0; q < s.n; q++) for (const c of a.cards)
-      if (s.known[q].has(c)) { s.known[q].delete(c); s.knownHidden[q].add(c); }
-    t.layers.push({ p, type: 'discard', cards: a.cards.slice() });
-  } else throw new Error('Невідома дія');
-  t.queue.shift();
-  if (!t.queue.length) s.phase = 'resolve';
-}
-
-// Хто забирає взятку, що лежить на столі
-function trickWinner(s) { const t = s.table; return t.topBy === null ? t.by : t.topBy; }
-
-function finishTrick(s) {
-  if (s.phase !== 'resolve') throw new Error('Взятка ще не зіграна');
-  const t = s.table, w = trickWinner(s);
-  for (const c of t.attack) s.piles[w].push({ c, hidden: false, by: t.by });
-  for (const l of t.layers) for (const c of l.cards) s.piles[w].push({ c, hidden: l.type === 'discard', by: l.p });
-  s.table = null; s.lastTrick = w; s.attacker = w;
-  // добір: першим той, хто взяв взятку, далі за годинниковою стрілкою
-  let q = w;
-  while (s.stock.length && s.hands.some(h => h.length < 4)) {
-    if (s.hands[q].length < 4) {
-      const c = s.stock.shift();
-      s.hands[q].push(c);
-      if (c === s.trumpCard) { s.trumpHolder = q; for (let o = 0; o < s.n; o++) if (o !== q) s.known[o].set(c, q); }
-    }
-    q = (q + 1) % s.n;
-  }
-  s.phase = (!s.stock.length && s.hands.every(h => !h.length)) ? 'dealEnd' : 'attack';
-  return w;
-}
-
-function pilePoints(s, p) { return s.piles[p].reduce((t, e) => t + ptsOf(e.c), 0); }
-const penaltyFor = pts => pts === 0 ? 4 : pts <= 30 ? 2 : 1;
-
-// Результат роздачі. pens[i] — штрафні очки гравця i за цю роздачу
-function dealResult(s, mult) {
-  const n = s.n, pts = s.piles.map((_, i) => pilePoints(s, i));
-  const pens = new Array(n).fill(0);
-  if (n === 2 || n === 4) {
-    // на двох — гравці, пара на пару — команди; правила однакові
-    const tp = n === 2 ? pts.slice() : [pts[0] + pts[2], pts[1] + pts[3]];
-    const tpens = [0, 0];
-    if (tp[0] === 60) return { pts, teamPts: tp, eggs: true, pens: tpens, winners: [], bases: [0, 0] };
-    const loser = tp[0] < tp[1] ? 0 : 1;
-    const bases = [0, 0]; bases[loser] = penaltyFor(tp[loser]);
-    tpens[loser] = bases[loser] * mult;
-    return { pts, teamPts: tp, eggs: false, pens: tpens, bases, winners: [1 - loser], loser, penalty: tpens[loser], base: bases[loser] };
-  }
-  // На трьох: перемагає найбільша сума (нічия за перше — обидва без штрафу), решта за шкалою
-  const max = Math.max(...pts);
-  const bases = pts.map(x => x === max ? 0 : penaltyFor(x));
-  for (let i = 0; i < n; i++) pens[i] = bases[i] * mult;
-  return { pts, eggs: false, pens, bases, winners: pts.map((x, i) => x === max ? i : -1).filter(i => i >= 0) };
-}
-
-// ---------- Серія ----------
-function newSeries(n, goal) {
-  return { n, goal: goal === 6 ? 6 : 12, penalties: new Array(teamCount(n)).fill(0), mult: 1, dealNo: 0, nextStarter: null,
-    over: false, loser: -1, losers: [], milk: false, deals: [] };
-}
-function applyDealToSeries(ser, res, lastTrick) {
-  ser.dealNo++;
-  ser.nextStarter = lastTrick;
-  const rec = { pts: res.pts, eggs: res.eggs, mult: ser.mult, pens: res.pens.slice(), bases: res.bases };
-  ser.deals.push(rec);
-  if (res.eggs) { ser.mult *= 2; return rec; }
-  for (let i = 0; i < ser.penalties.length; i++) ser.penalties[i] += res.pens[i];
-  ser.mult = 1;
-  const P = ser.penalties, max = Math.max(...P), min = Math.min(...P);
-  const withMax = P.map((x, i) => x === max ? i : -1).filter(i => i >= 0);
-  if (ser.n === 2 || ser.n === 4) {
-    if ((P[0] === 6 && P[1] === 0) || (P[1] === 6 && P[0] === 0)) { ser.over = true; ser.milk = true; }
-    else if (max >= ser.goal) ser.over = true;
-  } else {
-    if (max >= 6 && min === 0) { ser.over = true; ser.milk = true; }
-    else if (max >= ser.goal) ser.over = true;
-  }
-  if (ser.over) { ser.losers = withMax; ser.loser = withMax[0]; }
-  return rec;
-}
-
-const Engine = {
-  SUIT_SYM, SUIT_NAME, RANK_LABEL, PTS, suitOf, rankOf, ptsOf, cardLabel,
-  mulberry32, shuffle, beats, canCover, matchCover, isUniform, isCombo, subsets, subsetsOfSize,
-  defendersFrom, teamOf, teamCount, newDeal, cloneState, toAct, legalActions, canIntercept, applyAction, trickWinner,
-  finishTrick, pilePoints, penaltyFor, dealResult, newSeries, applyDealToSeries,
-};
-if (typeof module !== 'undefined') module.exports = Engine;
-
-</script>
-<script>
-// ===== Боярський козел: штучний суперник (2 або 3 гравці) =====
-// Легкий: евристика з шумом. Середній/Сильний: Монте-Карло з детермінізацією —
-// бот "вгадує" приховані карти лише з того, що бачив сам, і розігрує варіанти до кінця роздачі.
-const E = (typeof module !== 'undefined') ? require('./engine2.js') : Engine;
-
-const trumpStrength = (c, trump) => E.suitOf(c) === trump ? 10 + E.rankOf(c) : 0;
-const keepValue = (c, trump) => E.ptsOf(c) + trumpStrength(c, trump) * 0.9 + E.rankOf(c) * 0.25;
-
-function heuristicAction(s, rng, noise) {
-  const acts = E.legalActions(s);
-  const trump = s.trump;
-  if (s.phase === 'attack') {
-    let best = null, bs = -1e9;
-    const endgame = s.stock.length === 0;
-    for (const a of acts) {
-      const n = a.cards.length;
-      const pts = a.cards.reduce((t, c) => t + E.ptsOf(c), 0);
-      const tr = a.cards.filter(c => E.suitOf(c) === trump).length;
-      let sc = n * 2.2 - pts * 0.55 - tr * 7 - a.cards.reduce((t, c) => t + E.rankOf(c), 0) * 0.3;
-      if (endgame) sc += a.cards.filter(c => E.rankOf(c) === 8 || (E.suitOf(c) === trump && E.rankOf(c) >= 6)).length * 6;
-      sc += (rng() - 0.5) * noise;
-      if (sc > bs) { bs = sc; best = a; }
-    }
-    return best;
-  }
-  const me = E.toAct(s), t = s.table;
-  const mate = q => s.n === 4 && q !== me && q % 2 === me % 2;
-  if (s.phase === 'intercept') return mate(t.by) ? acts[1] : (rng() < 0.97 ? acts[0] : acts[1]);
-  const inter = acts.find(a => a.type === 'intercept');
-  if (inter && rng() > noise * 0.02) return inter;
-  const owner = t.topBy === null ? t.by : t.topBy;
-  if (mate(owner)) {
-    // старші карти в партнера: не перебиваємо; якщо суперників після мене нема — "підмазуємо" дорогими
-    const oppAfter = t.queue.slice(1).some(q => q % 2 !== me % 2);
-    let best = null, bv = -1e9;
-    for (const a of acts) if (a.type === 'discard') {
-      const pts = a.cards.reduce((x, c) => x + E.ptsOf(c), 0);
-      const keep = a.cards.reduce((x, c) => x + trumpStrength(c, trump) * 0.9 + E.rankOf(c) * 0.25, 0);
-      const v = (oppAfter ? -pts * 0.6 : pts * 1.0) - keep + (rng() - 0.5) * noise;
-      if (v > bv) { bv = v; best = a; }
-    }
-    if (best) return best;
-  }
-  let tablePts = t.attack.reduce((x, c) => x + E.ptsOf(c), 0);
-  for (const l of t.layers) if (l.type === 'cover') tablePts += l.cards.reduce((x, c) => x + E.ptsOf(c), 0);
-  const laterDefenders = t.queue.length - 1; // хто ще битиме після мене
-  let bestCover = null, bc = 1e9, bestDisc = null, bd = 1e9;
-  for (const a of acts) {
-    if (a.type === 'cover') {
-      const cost = a.cards.reduce((x, c) => x + trumpStrength(c, trump) * 0.8 + E.rankOf(c) * 0.2, 0);
-      if (cost < bc) { bc = cost; bestCover = a; }
-    } else if (a.type === 'discard') {
-      const cost = a.cards.reduce((x, c) => x + keepValue(c, trump), 0);
-      if (cost < bd) { bd = cost; bestDisc = a; }
-    }
-  }
-  const discPts = bestDisc ? bestDisc.cards.reduce((x, c) => x + E.ptsOf(c), 0) : 0;
-  if (bestCover) {
-    let gain = tablePts * 2 + discPts * 2 + bestCover.cards.reduce((x, c) => x + E.ptsOf(c), 0);
-    if (laterDefenders > 0) gain *= 0.7; // мене ще можуть перебити
-    if (gain + 4 + (rng() - 0.5) * noise > bc) return bestCover;
-  }
-  return bestDisc;
-}
-
-// Випадковий розклад прихованих карт, сумісний з тим, що знає гравець p
-function determinize(s, p, rng) {
-  const d = E.cloneState(s);
-  const excluded = new Set(s.hands[p]);
-  for (const pile of s.piles) for (const e of pile) if (!e.hidden || e.by === p) excluded.add(e.c);
-  if (s.table) {
-    for (const c of s.table.attack) excluded.add(c);
-    for (const l of s.table.layers) if (l.type === 'cover' || l.p === p) for (const c of l.cards) excluded.add(c);
-  }
-  for (const c of s.knownHidden[p]) excluded.add(c);
-  const knownIn = Array.from({ length: s.n }, () => []);
-  for (const [c, owner] of s.known[p]) if (s.hands[owner].includes(c)) { knownIn[owner].push(c); excluded.add(c); }
-  const trumpInStock = s.stock.length > 0 && s.stock[s.stock.length - 1] === s.trumpCard;
-  if (trumpInStock) excluded.add(s.trumpCard);
-
-  const pool = [];
-  for (let c = 0; c < 36; c++) if (!excluded.has(c)) pool.push(c);
-  E.shuffle(pool, rng);
-  let k = 0;
-  for (let q = 0; q < s.n; q++) {
-    if (q === p) continue;
-    const h = knownIn[q].slice();
-    while (h.length < s.hands[q].length) h.push(pool[k++]);
-    d.hands[q] = h;
-  }
-  const stock = [];
-  const free = trumpInStock ? s.stock.length - 1 : s.stock.length;
-  for (let i = 0; i < free; i++) stock.push(pool[k++]);
-  if (trumpInStock) stock.push(s.trumpCard);
-  d.stock = stock;
-  const unknownHidden = c => !s.knownHidden[p].has(c);
-  for (const pile of d.piles) for (const e of pile)
-    if (e.hidden && e.by !== p && unknownHidden(e.c)) e.c = pool[k++];
-  if (d.table) for (const l of d.table.layers)
-    if (l.type === 'discard' && l.p !== p) l.cards = l.cards.map(c => unknownHidden(c) ? pool[k++] : c);
-  if (k !== pool.length) throw new Error('determinize: pool mismatch ' + k + ' vs ' + pool.length);
-  return d;
-}
-
-function utility(s, p) {
-  const r = E.dealResult(s, 1);
-  const n = s.n;
-  if (n === 4) {
-    const t = p % 2;
-    return -r.pens[t] + r.pens[1 - t] + (r.teamPts[t] - r.teamPts[1 - t]) * 0.004;
-  }
-  let others = 0, optsSum = 0;
-  for (let q = 0; q < n; q++) if (q !== p) { others += r.pens[q]; optsSum += r.pts[q]; }
-  const w = n === 2 ? 1 : 0.5;
-  return -r.pens[p] + w * others / (n - 1) + (r.pts[p] - optsSum / (n - 1)) * 0.004;
-}
-
-function rollout(s, rng, noise) {
-  let guard = 0;
-  while (s.phase !== 'dealEnd') {
-    if (s.phase === 'resolve') E.finishTrick(s);
-    else E.applyAction(s, heuristicAction(s, rng, noise));
-    if (++guard > 800) throw new Error('rollout loop');
-  }
-}
-
-const LEVELS = {
-  easy: { mc: 0, noise: 6 },
-  medium: { mc: 60, noise: 3 },
-  hard: { mc: 400, noise: 2, timeMs: 700 },
-  // «Дядя Слава»: сильний плюс — у 2,5 раза більше варіантів розкладу на кожен хід
-  slava: { mc: 1000, noise: 2, timeMs: 1600 },
-};
-
-function chooseAction(s, level, rng) {
-  const cfg = LEVELS[level] || LEVELS.hard;
-  const acts = E.legalActions(s);
-  if (acts.length === 1) return acts[0];
-  if (!cfg.mc) return heuristicAction(s, rng, cfg.noise);
-  const p = E.toAct(s);
-  const sums = new Array(acts.length).fill(0);
-  const t0 = Date.now();
-  for (let it = 0; it < cfg.mc; it++) {
-    const det = determinize(s, p, rng);
-    const seed = (rng() * 4294967296) >>> 0;
-    for (let i = 0; i < acts.length; i++) {
-      const sim = E.cloneState(det);
-      E.applyAction(sim, acts[i]);
-      rollout(sim, E.mulberry32(seed), cfg.rnoise || 1.5);
-      sums[i] += utility(sim, p);
-    }
-    if (cfg.timeMs && Date.now() - t0 > cfg.timeMs && it >= 60) break;
-  }
-  let bi = 0;
-  for (let i = 1; i < acts.length; i++) if (sums[i] > sums[bi]) bi = i;
-  return acts[bi];
-}
-
-const AI = { heuristicAction, determinize, chooseAction, utility, LEVELS };
-if (typeof module !== 'undefined') module.exports = AI;
-
-</script>
+<script src="engine.js"></script>
+<script src="ai.js"></script>
+<script src="stats.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const L = Engine;
-const LEVEL_NAME = { medium: 'Середній', hard: 'Сильний', slava: 'Дядя Слава' };
-const LEVELS_UI = [['medium', 'Середній'], ['hard', 'Сильний'], ['slava', 'Дядя Слава']];
+const LEVEL_NAME = { easy: 'Новачок', medium: 'Середній', hard: 'Сильний', slava: 'Дядя Слава' };
+const LEVELS_UI = [['easy', 'Новачок'], ['medium', 'Середній'], ['hard', 'Сильний'], ['slava', 'Дядя Слава']];
 const levelText = k => k === 'slava' ? 'Дядя Слава' : (LEVEL_NAME[k] || 'Середній').toLowerCase();
 const G = { mode: 2, level: 'hard', ser: null, deal: null,
   goal: 12,
@@ -1010,7 +611,7 @@ function renderBoard(s, actor) {
     const chip = G.chips[p];
     const nmp = esc(nm(p)), letter = LETTER[nm(p)] || esc((nm(p)[0] || '?').toUpperCase());
     const off = G.net.room && G.net.room.online && !G.net.room.online[p];
-    const ch = off ? 'нема зв’язку' : chip;
+    const ch = off ? (G.net.room.auto && G.net.room.auto[p] ? '🤖 грає бот' : 'нема зв’язку') : chip;
     seat.innerHTML = `<div class="ava" aria-label="${nmp}">${letter}${avaImg(p)}<span class="cnt4">${s.hands[p].length}</span></div>` +
       `<div class="nm4">${nmp.length > 12 ? nmp.slice(0, 11) + '…' : nmp}${isMate(p) ? ' (партнер)' : ''}</div><div class="chip${ch === 'взятка' ? ' win' : ''}${ch ? '' : ' hide'}">${ch || '·'}</div>`;
     if (actor === p && turnRemainMs() !== null) seat.insertAdjacentHTML('beforeend', '<div class="tl" data-tl></div>');
@@ -1070,6 +671,7 @@ function renderActions(mine) {
     mk(G.busy && a > 0 ? nm(a) + ' думає…' : 'Зачекайте', null, false); return;
   }
   const sel = [...G.sel];
+  if (!G.net.room && !(s.phase === 'defend' && L.canIntercept(s))) { const hb = mk('💡', doHint, true); hb.classList.add('hint'); hb.setAttribute('aria-label', 'Підказка'); hb.title = 'Підказка'; }
   if (s.phase === 'attack') {
     const ok = sel.length > 0 && L.isUniform(sel);
     mk(sel.length > 1 ? 'Походити ' + cardsWord(sel.length) : 'Походити', () => act({ type: 'attack', cards: sel }), ok, true);
@@ -1102,8 +704,8 @@ function renderActions(mine) {
 const motionOK = () => !window.matchMedia || !matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.8,.2,1)';
 // Швидкість руху карт: 1 — початкова; 0.85 — на 15% повільніше
-const SPEED = 0.85;
-const dur = ms => Math.round(ms / SPEED);
+const SPEEDS = { slow: 0.65, normal: 0.85, fast: 1.2 };
+const dur = ms => Math.round(ms / (SPEEDS[G.set.speed] || 0.85));
 function seatAva(p) {
   if (!G.deal || p === 0) return null;
   const at = POS[G.deal.n][p].at;
@@ -1147,6 +749,7 @@ function render() {
 }
 // Взятка з'їжджає до того, хто її забрав
 function collectTo(w) {
+  Sfx.play('collect');
   if (!motionOK()) return;
   const target = w === 0 ? $('myHand') : seatAva(w);
   if (!target) return;
@@ -1164,6 +767,7 @@ function collectTo(w) {
 function later(fn, ms) { clearTimeout(G.timer); G.timer = setTimeout(fn, ms); }
 function act(a) {
   if (G.busy || L.toAct(G.deal) !== 0) return;
+  if (G.tut && !Tut.check(a)) return;
   G.turnLeft = null;
   haptic.act();
   if (G.net.room) { // онлайн: хід перевіряє сервер
@@ -1179,6 +783,8 @@ function act(a) {
 function perform(p, a) {
   const s = G.deal;
   G.prompt = ''; G.sel.clear();
+  Sfx.forAction(a, s.trump);
+  if (a.type === 'intercept' && p === 0 && !G.tut) localStat(st => Stats.onIntercept(st));
   if (a.type === 'attack') G.chips = { [p]: 'ходить' };
   else if (a.type === 'intercept') G.chips = { [p]: 'перехопив' };
   else if (a.type === 'cover') G.chips[p] = "б'є";
@@ -1202,6 +808,7 @@ function perform(p, a) {
     else G.notes.push(p === 0 ? `Ви скинули ${cardsWord(a.cards.length)}.` : `${nm(p)} скидає ${cardsWord(a.cards.length)}.`);
   }
   render();
+  saveGame();
   later(step, p === 0 ? 350 : 500);
 }
 
@@ -1229,7 +836,7 @@ function step() {
       if (w === 0 || isMate(w)) haptic.good();
       later(() => {
         collectTo(w);
-        later(() => { L.finishTrick(s); G.notes = []; G.pending = res; render(); later(step, 150); }, dur(560));
+        later(() => { if (G.tut) return Tut.done(); L.finishTrick(s); G.notes = []; G.pending = res; render(); saveGame(); later(step, 150); }, dur(560));
       }, 850);
       return;
     }
@@ -1240,8 +847,8 @@ function step() {
   const p = L.toAct(s);
   if (p !== 0) {
     G.busy = true; G.prompt = ''; render();
-    later(() => { const a = AI.chooseAction(s, G.level, G.rng); G.busy = false; perform(p, a); }, 550);
-  } else { G.busy = false; G.turnLeft = TURN_MS; G.warned = false; promptMe(); render(); }
+    later(() => { const a = G.tut ? Tut.botAction(s) : AI.chooseAction(s, G.level, G.rng); G.busy = false; perform(p, a); }, 550);
+  } else { G.busy = false; G.turnLeft = G.set.timer && !G.tut ? TURN_MS : null; G.warned = false; promptMe(); render(); }
 }
 
 function startSeries() {
@@ -1250,6 +857,8 @@ function startSeries() {
   tgGuard(true);
   try { localStorage.setItem('kozel-level', G.level); localStorage.setItem('kozel-mode', G.mode); localStorage.setItem('kozel-goal', G.goal); } catch (e) {}
   clearTimeout(G.timer);
+  G.tut = null; Tut.show();
+  G.seriesMode = G.mode;
   G.ser = L.newSeries(G.mode, G.goal); G.started = true; closeSheet(); startDeal(true);
 }
 function startDeal(first) {
@@ -1264,6 +873,7 @@ function startDeal(first) {
   } else t += who + ' (остання взятка).';
   if (G.ser.mult > 1) t += ` Штрафи в цій роздачі ×${G.ser.mult}.`;
   G.pending = t; render();
+  saveGame();
   later(step, 1400);
 }
 
@@ -1271,11 +881,14 @@ function endDeal() {
   const s = G.deal, ser = G.ser;
   const res = L.dealResult(s, ser.mult);
   const rec = L.applyDealToSeries(ser, res, s.lastTrick);
+  localStat(st => Stats.onDeal(st, Stats.dealFacts(res, ser.n, 0)));
+  if (ser.over) localStat(st => Stats.onSeries(st, { lost: Stats.seriesLost(ser, 0), milk: ser.milk }));
+  if (ser.over) clearSave(); else saveGame(true);
   render();
-  showDealEnd(res, rec, ser);
+  showDealEnd(res, rec, ser, s.piles.map(pile => pile.map(e => [e.c, e.hidden ? 1 : 0])), s.trump);
 }
 // Підсумок роздачі (офлайн і онлайн). Індекс 0 — це завжди ви (або ваша команда).
-function showDealEnd(res, rec, ser) {
+function showDealEnd(res, rec, ser, reveal, trump) {
   const n = ser.n, on = !!G.net.room;
   const penWord = k => k + ' ' + plural(k, 'штрафне', 'штрафні', 'штрафних');
   const why = b => b === 4 ? 'ані очка' : b === 2 ? 'до 30 очок' : 'менше 60 очок';
@@ -1325,16 +938,21 @@ function showDealEnd(res, rec, ser) {
     const canDuo = n === 3 && ser.losers.length === 1 && !ser.losers.includes(0) && survivorsOk && (!on || G.net.room.canDuo);
     h += `<div class="stack">`;
     if (canDuo) h += `<button class="btn primary" id="duoBtn">Дограти вдвох до фіналу</button>`;
-    if (on) h += `<button class="btn${canDuo ? '' : ' primary'}" id="next">Ще партію</button><button class="btn" id="leaveBtn">Вийти з-за столу</button>`;
-    else h += `<button class="btn${canDuo ? '' : ' primary'}" id="again">Нова гра</button>`;
+    if (on) h += `<button class="btn${canDuo ? '' : ' primary'}" id="next">Реванш</button>`;
+    else h += `<button class="btn${canDuo ? '' : ' primary'}" id="rematch">Реванш</button>`;
+    h += `<button class="btn" id="shareBtn">Поділитися результатом</button>`;
+    h += on ? `<button class="btn" id="leaveBtn">Вийти з-за столу</button>` : `<button class="btn" id="again">Головне меню</button>`;
     h += `</div>`;
   } else {
     h += `<div class="stack"><button class="btn primary" id="next">${on ? 'Далі' : 'Наступна роздача'}</button>` +
       `<button class="btn" id="exitBtn">Вийти в головне меню</button></div>`;
   }
+  h += revealHtml(reveal, n, trump);
   const openIt = () => {
     openSheet(h, 'dealEnd');
-    if ($('exitBtn')) $('exitBtn').onclick = () => confirmExit(() => showDealEnd(res, rec, ser));
+    if ($('rematch')) $('rematch').onclick = () => { G.mode = G.seriesMode || G.mode; startSeries(); };
+    if ($('shareBtn')) $('shareBtn').onclick = () => Share.result(ser, losers);
+    if ($('exitBtn')) $('exitBtn').onclick = () => confirmExit(() => showDealEnd(res, rec, ser, reveal, trump));
     if ($('again')) $('again').onclick = openMenu;
     if ($('leaveBtn')) $('leaveBtn').onclick = () => { netSend({ t: 'leave' }); };
     if ($('duoBtn')) $('duoBtn').onclick = () => {
@@ -1348,6 +966,7 @@ function showDealEnd(res, rec, ser) {
         : () => { closeSheet(); startDeal(false); };
     }
   };
+  G.lastDealEnd = openIt;
   if (over) goatShow(ser, losers, openIt); else openIt();
 }
 
@@ -1435,6 +1054,7 @@ function netSend(m) {
 function netOnMessage(m) {
   if (m.t === 'welcome') {
     G.net.me = m.me; G.net.lastRoom = m.lastRoom || null;
+    netSend({ t: 'stats' });
     if (G.sheetKind === 'menu' && !G.net.room) openMenu(G.menuByUser);
     return;
   }
@@ -1449,11 +1069,15 @@ function netOnMessage(m) {
     G.net.room = null; G.deal = null; G.ser = null; G.chips = {}; tgGuard(false); renderPause(null);
     render(); openMenu(); return;
   }
+  if (m.t === 'ach') { showAch(m.ids); if (G.netStats) m.ids.forEach(id => { G.netStats.me.ach[id] = Date.now(); }); return; }
+  if (m.t === 'stats') { G.netStats = m; if (G.sheetKind === 'stats') openStats(G.statsTab); return; }
+  if (m.t === 'shareReady') { Share.ready(m); return; }
   if (m.t === 'chatHistory') { Chat.list = m.list; Chat.unread = 0; chatPaint(); return; }
   if (m.t === 'chat') { chatIncoming(m.m); return; }
   if (m.t === 'room') netApply(m);
 }
 function applyEv(ev, v) {
+  if (['attack', 'cover', 'discard', 'intercept'].includes(ev.t)) Sfx.play(ev.t === 'cover' ? 'beat' : ev.t === 'intercept' ? 'intercept' : 'card');
   switch (ev.t) {
     case 'deal': G.chips = { [ev.p]: 'перший' }; break;
     case 'attack': G.chips = { [ev.p]: 'ходить' }; break;
@@ -1476,6 +1100,7 @@ function applyEv(ev, v) {
 }
 function netApply(v) {
   const N = G.net;
+  if (G.tut) { G.tut = null; Tut.show(); }
   N.room = v; N.names = v.names.map((x, i) => i === 0 ? 'Ви' : x); N.sent = false; N.lastRoom = null;
   N.offset = (v.now || Date.now()) - Date.now();
   if (v.deadline !== N.deadline) { N.deadline = v.deadline || null; G.warned = false; }
@@ -1509,7 +1134,7 @@ function netApply(v) {
   render();
   if (v.status === 'dealEnd' || v.status === 'over') {
     const key = v.ser.dealNo + ':' + v.status;
-    if (N.shown !== key) { N.shown = key; showDealEnd(v.result, v.rec, v.ser); }
+    if (N.shown !== key) { N.shown = key; showDealEnd(v.result, v.rec, v.ser, v.reveal, v.deal ? v.deal.trump : null); }
     const btn = $('next');
     if (btn && btn.disabled) {
       btn.textContent = v.waiting.length ? 'Чекаємо: ' + v.waiting.join(', ') : 'Чекаємо інших…';
@@ -1556,7 +1181,7 @@ function goatSvg(i) {
 const Sfx = {
   ctx: null,
   bleat(delay) {
-    if (!Music.on) return;
+    if (!G.set.sfx) return;
     try {
       const C = window.AudioContext || window.webkitAudioContext;
       this.ctx = this.ctx || new C();
@@ -1619,7 +1244,8 @@ function renderPause(v) {
   if (!away.length || G.net.pauseHidden) { el.hidden = true; return; }
   let h = `<h2>Гру зупинено</h2>`;
   h += away.map(a => `<p class="who">Гравець <b>${esc(a.name)}</b> вийшов з гри.</p>`).join('');
-  h += `<p>Гра продовжиться, щойно гравець повернеться за посиланням-запрошенням або кнопкою «Повернутися до гри» в меню.</p><div class="stack">`;
+  h += away.map(a => a.autoAt ? `<p>Через <b data-autoat="${a.autoAt}">${fmtTime(a.autoAt - Date.now() - (G.net.offset || 0))}</b> за гравця ${esc(a.name)} тимчасово гратиме бот.</p>` : '').join('');
+  h += `<p>Гра продовжиться, щойно гравець повернеться за посиланням-запрошенням або кнопкою «Повернутися до гри» в меню. Бот уже надіслав йому нагадування в Telegram.</p><div class="stack">`;
   h += `<button class="btn" id="pauseInvite">Надіслати запрошення ще раз</button>`;
   if (v.host) h += away.map(a => `<button class="btn" data-repl="${a.i}">Посадити бота замість: ${esc(a.name)}</button>`).join('');
   h += `<button class="btn" id="pauseMenu">Відкрити меню</button></div>`;
@@ -1658,7 +1284,7 @@ function showLobby(v) {
   h += `</div>`;
   if (n === 4) h += `<p>Партнери сидять навпроти: команда А — місця 1 і 3, команда Б — місця 2 і 4.</p>`;
   if (v.host) {
-    h += `<div class="menu-lbl">Сила ботів</div><div class="stack"><div class="row">` +
+    h += `<div class="menu-lbl">Сила ботів</div><div class="stack"><div class="row two">` +
       LEVELS_UI.map(([k, t]) =>
         `<button class="btn${k === v.level ? ' primary' : ''}" data-nlv="${k}">${t}</button>`).join('') + `</div></div>`;
     h += `<div class="menu-lbl">Довжина гри</div><div class="stack"><div class="row">` +
@@ -1693,7 +1319,7 @@ function confirmExit(back) {
   const on = !!G.net.room;
   let h = `<h2>Вийти в головне меню?</h2>`;
   h += on ? `<p>Гру за столом ${G.net.room.code} буде зупинено, доки ви не повернетесь. Повернутися можна кнопкою «Повернутися до гри» в меню або за посиланням-запрошенням.</p>`
-          : `<p>Поточну партію буде завершено, рахунок не збережеться.</p>`;
+          : G.tut ? `<p>Навчання можна пройти знову з меню.</p>` : `<p>Поточну партію буде завершено, рахунок не збережеться.</p>`;
   h += `<div class="stack"><button class="btn danger" id="exitYes">Так, вийти</button><button class="btn primary" id="exitNo">Ні, грати далі</button></div>`;
   openSheet(h, 'confirm');
   $('exitNo').focus();
@@ -1705,6 +1331,8 @@ function confirmExit(back) {
     haptic.act();
     if (on) { G.net.lobbyOpen = false; netSend({ t: 'leave' }); return; }
     clearTimeout(G.timer);
+    if (!G.tut) clearSave();
+    G.tut = null; Tut.show();
     G.started = false; G.deal = null; G.ser = null; G.chips = {}; G.sel.clear(); G.turnLeft = null; G.gameStart = null;
     tgGuard(false); render(); openMenu();
   };
@@ -1742,7 +1370,7 @@ function openMenu(byUser) {
   G.menuByUser = byUser === true; G.menuHadRoom = !!G.net.room;
   G.net.lobbyOpen = false;
   let mode = G.mode, level = G.level, goal = G.goal;
-  const btns = (key, opts, cur) => `<div class="row">` + opts.map(([v, t]) =>
+  const btns = (key, opts, cur) => `<div class="row${opts.length === 4 ? ' two' : ''}">` + opts.map(([v, t]) =>
     `<button class="btn${v === cur ? ' primary' : ''}" data-${key}="${v}" aria-pressed="${v === cur}">${t}</button>`).join('') + `</div>`;
   let h = `<h2>Боярський козел</h2>`;
   h += `<div class="menu-lbl">Гравці</div><div class="stack">` + btns('md', [[2, 'На двох'], [3, 'На трьох'], [4, 'Пара на пару']], mode) + `</div>`;
@@ -1751,14 +1379,15 @@ function openMenu(byUser) {
   if (G.net.room) h += `<div class="stack"><button class="btn primary" id="resumeBtn">Повернутися за стіл ${G.net.room.code}</button></div>`;
   else if (G.net.lastRoom) h += `<div class="stack"><button class="btn primary" id="backToGame">Повернутися до гри (стіл ${G.net.lastRoom.code})</button></div>`;
   h += `<div class="stack"><button class="btn${G.net.room || G.net.lastRoom ? '' : ' primary'}" id="startBtn">Грати з ботами</button>`;
-  if (G.started && !G.net.room && !G.ser.over) h += `<button class="btn" id="resumeBtn">Продовжити поточну</button>`;
+  if (G.started && !G.net.room && !G.tut && G.ser && !G.ser.over) h += `<button class="btn" id="resumeBtn">Продовжити поточну</button>`;
+  else if (!G.started && G.saved && !G.net.room) h += `<button class="btn" id="loadBtn">Продовжити збережену: ${MODE_NAME[G.saved.mode] || ''}, ${G.saved.ser.penalties.join(' : ')}</button>`;
   h += `</div>`;
   if (window.KOZEL_ONLINE) {
     h += `<div class="menu-lbl">З друзями онлайн</div><div class="stack">`;
     h += `<button class="btn" id="createBtn">Створити стіл</button>`;
     h += `<div class="joinrow"><input id="codeIn" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="0000" autocomplete="off" aria-label="Код столу (4 цифри)"><button class="btn" id="joinBtn">Увійти</button></div><p class="menu-err" id="menuErr" role="alert"></p></div>`;
   }
-  h += `<div class="stack"><button class="btn" id="musicMenuBtn">${Music.on ? '♫ Музика: увімкнена' : '♫ Музика: вимкнена'}</button></div>`;
+  h += `<div class="menu-grid"><button class="btn" id="tutBtn"><i>🎓</i>Навчання</button><button class="btn" id="statsBtn"><i>📊</i>Статистика</button><button class="btn" id="setBtn"><i>⚙️</i>Налаштування</button></div>`;
   h += RULES;
   openSheet(h);
   const wire = (key, set) => document.querySelectorAll(`[data-${key}]`).forEach(b => b.onclick = () => {
@@ -1766,14 +1395,19 @@ function openMenu(byUser) {
     document.querySelectorAll(`[data-${key}]`).forEach(x => { x.classList.toggle('primary', x === b); x.setAttribute('aria-pressed', x === b); });
   });
   wire('md', v => mode = +v); wire('lv', v => level = v); wire('gl', v => goal = +v);
-  $('startBtn').onclick = () => { G.mode = mode; G.level = level; G.goal = goal; startSeries(); };
+  $('startBtn').onclick = () => { G.mode = mode; G.level = level; G.goal = goal; clearSave(); startSeries(); };
   if ($('resumeBtn')) $('resumeBtn').onclick = () => { if (G.net.room && G.net.room.status === 'lobby') showLobby(G.net.room); else closeSheet(); };
-  $('musicMenuBtn').onclick = () => { Music.toggle(); $('musicMenuBtn').textContent = Music.on ? '♫ Музика: увімкнена' : '♫ Музика: вимкнена'; };
+  $('tutBtn').onclick = () => Tut.start(0);
+  $('statsBtn').onclick = () => openStats('me');
+  $('setBtn').onclick = () => openSettings();
+  if ($('loadBtn')) $('loadBtn').onclick = resumeSaved;
   if ($('backToGame')) $('backToGame').onclick = () => { G.net.lobbyOpen = true; netSend({ t: 'join', code: G.net.lastRoom.code }); };
-  if ($('createBtn')) $('createBtn').onclick = () => { G.mode = mode; G.level = level; G.goal = goal; G.net.lobbyOpen = true; netSend({ t: 'create', n: mode, level, goal }); };
+  if ($('createBtn')) $('createBtn').onclick = () => {
+    askWrite(); G.mode = mode; G.level = level; G.goal = goal; G.net.lobbyOpen = true; netSend({ t: 'create', n: mode, level, goal }); };
   if ($('joinBtn')) $('joinBtn').onclick = () => {
     const c = $('codeIn').value.replace(/\D/g, '');
     if (c.length !== 4) { toast('Код столу — 4 цифри'); return; }
+    askWrite();
     G.net.lobbyOpen = true; netSend({ t: 'join', code: c });
   };
 }
@@ -1815,6 +1449,7 @@ function tick() {
     bar.classList.toggle('low', r <= 10000);
     if (r <= 10000 && !G.warned) { G.warned = true; haptic.act(); }
   }
+  document.querySelectorAll('[data-autoat]').forEach(el => { const ms = +el.dataset.autoat - now - (G.net.offset || 0); el.textContent = ms > 0 ? fmtTime(ms) : 'кілька секунд'; });
   document.querySelectorAll('[data-tl]').forEach(el => {
     el.textContent = rem !== null ? Math.max(0, Math.ceil(rem / 1000)) + ' с' : '';
     el.classList.toggle('low', rem !== null && rem <= 10000);
@@ -1915,6 +1550,474 @@ document.addEventListener('pointerdown', firstTouch, true);
 document.addEventListener('keydown', firstTouch, true);
 // Згорнули Telegram чи перейшли в іншу вкладку — музика на паузі
 document.addEventListener('visibilitychange', () => { if (document.hidden) Music.pause(); else if (Music.started) Music.play(); });
+// ===================================================================
+// ---------- Сховище: Telegram CloudStorage (синхронізується між пристроями) + localStorage ----------
+const KV = {
+  local(k, v) {
+    try {
+      if (v === undefined) return localStorage.getItem(k);
+      if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v);
+    } catch (e) {}
+    return null;
+  },
+  cs() { return TG && tgv('6.9') && TG.CloudStorage ? TG.CloudStorage : null; },
+  timers: {},
+  // Значення в CloudStorage обмежені 4096 символами — довгі ріжемо на шматки
+  set(k, v, delay) {
+    this.local(k, v);
+    const cs = this.cs(); if (!cs) return;
+    clearTimeout(this.timers[k]);
+    this.timers[k] = setTimeout(() => {
+      try {
+        if (v === null) { cs.removeItem(k); return; }
+        const parts = []; for (let i = 0; i < v.length; i += 4000) parts.push(v.slice(i, i + 4000));
+        if (parts.length <= 1) cs.setItem(k, v);
+        else { parts.forEach((x, i) => cs.setItem(k + '_' + i, x)); cs.setItem(k, '#parts:' + parts.length); }
+      } catch (e) {}
+    }, delay || 0);
+  },
+  get(k) {
+    return new Promise(res => {
+      const loc = this.local(k), cs = this.cs();
+      if (!cs) return res(loc);
+      let done = false; const fin = v => { if (!done) { done = true; res(v); } };
+      setTimeout(() => fin(loc), 2500);
+      try {
+        cs.getItem(k, (err, v) => {
+          if (err || !v) return fin(loc);
+          const m = /^#parts:(\d+)$/.exec(v);
+          if (!m) return fin(v);
+          const keys = [...Array(+m[1]).keys()].map(i => k + '_' + i);
+          cs.getItems(keys, (e2, obj) => fin(e2 || !obj ? loc : keys.map(x => obj[x] || '').join('')));
+        });
+      } catch (e) { fin(loc); }
+    });
+  },
+};
+
+// ---------- Налаштування ----------
+const DEF_SET = { speed: 'normal', timer: true, table: 'wood', back: 'bordo', sfx: true };
+G.set = { ...DEF_SET };
+try { Object.assign(G.set, JSON.parse(KV.local('kozel-set') || '{}')); } catch (e) {}
+function applySet() {
+  const r = document.documentElement;
+  if (G.set.table === 'wood') delete r.dataset.table; else r.dataset.table = G.set.table;
+  if (G.set.back === 'bordo') delete r.dataset.back; else r.dataset.back = G.set.back;
+  tgTheme();
+}
+function saveSet() { KV.set('kozel-set', JSON.stringify(G.set), 800); applySet(); }
+KV.get('kozel-set').then(v => { try { if (v) { Object.assign(G.set, JSON.parse(v)); applySet(); } } catch (e) {} });
+applySet();
+
+// ---------- Звуки (синтезовані, без файлів) ----------
+Object.assign(Sfx, {
+  ac() {
+    const C = window.AudioContext || window.webkitAudioContext;
+    if (!C) return null;
+    this.ctx = this.ctx || new C();
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    return this.ctx;
+  },
+  noise(ctx, t, len, freq, q, vol, type) {
+    const n = Math.floor(ctx.sampleRate * len), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.2);
+    const src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    src.buffer = b; f.type = type || 'bandpass'; f.frequency.setValueAtTime(freq, t); f.Q.setValueAtTime(q, t);
+    g.gain.setValueAtTime(vol, t);
+    src.connect(f); f.connect(g); g.connect(ctx.destination); src.start(t);
+    return f;
+  },
+  tone(ctx, t, freq, len, vol, type) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + len + 0.02);
+    return o;
+  },
+  play(kind) {
+    if (!G.set.sfx) return;
+    try {
+      const ctx = this.ac(); if (!ctx) return;
+      const t = ctx.currentTime + 0.01;
+      if (kind === 'card') this.noise(ctx, t, 0.07, 2600, 0.9, 0.35);
+      else if (kind === 'beat') { this.noise(ctx, t, 0.07, 2200, 0.9, 0.35); this.tone(ctx, t, 150, 0.09, 0.18); }
+      else if (kind === 'trump') { this.noise(ctx, t, 0.09, 1800, 0.8, 0.45); const o = this.tone(ctx, t, 220, 0.16, 0.22, 'triangle'); o.frequency.exponentialRampToValueAtTime(110, t + 0.15); }
+      else if (kind === 'intercept') { this.noise(ctx, t, 0.05, 3000, 1, 0.35); this.noise(ctx, t + 0.09, 0.05, 3000, 1, 0.35); this.tone(ctx, t + 0.09, 520, 0.12, 0.08, 'triangle'); }
+      else if (kind === 'collect') { const f = this.noise(ctx, t, 0.28, 900, 0.6, 0.22, 'lowpass'); f.frequency.exponentialRampToValueAtTime(3500, t + 0.25); }
+      else if (kind === 'ach') [523, 659, 784, 1046].forEach((f, i) => this.tone(ctx, t + i * 0.09, f, 0.25, 0.09, 'triangle'));
+    } catch (e) {}
+  },
+  forAction(a, trump) {
+    if (a.type === 'cover') this.play(a.cards.some(c => L.suitOf(c) === trump) ? 'trump' : 'beat');
+    else if (a.type === 'intercept') this.play('intercept');
+    else if (a.type === 'attack' || a.type === 'discard') this.play('card');
+  },
+});
+
+// ---------- Статистика ігор з ботами та нагороди ----------
+G.localStats = Stats.blank('');
+KV.get('kozel-stats').then(v => { try { if (v) G.localStats = Object.assign(Stats.blank(''), JSON.parse(v)); } catch (e) {} });
+function localStat(fn) {
+  if (G.net.room || G.tut) return;
+  const got = fn(G.localStats);
+  KV.set('kozel-stats', JSON.stringify(G.localStats), 1500);
+  showAch(got);
+}
+const achQueue = [];
+function showAch(ids) {
+  if (!ids || !ids.length) return;
+  for (const id of ids) if (!achQueue.includes(id) && !showAch.shown.has(id)) achQueue.push(id);
+  if (!showAch.busy) showAch.next();
+}
+showAch.shown = new Set();
+showAch.next = () => {
+  const id = achQueue.shift(), el = $('achToast');
+  if (!id) { showAch.busy = false; el.hidden = true; return; }
+  const a = Stats.ACH.find(x => x.id === id);
+  if (!a || showAch.shown.has(id)) return showAch.next();
+  showAch.shown.add(id); showAch.busy = true;
+  el.innerHTML = `<i>${a.icon}</i><div>Нова нагорода: ${esc(a.name)}<small>${esc(a.desc)}</small></div>`;
+  el.hidden = false; Sfx.play('ach'); haptic.good();
+  setTimeout(showAch.next, 3400);
+};
+const achUnlocked = () => new Set([...Object.keys(G.localStats.ach), ...Object.keys((G.netStats && G.netStats.me && G.netStats.me.ach) || {})]);
+
+function statGrid(st) {
+  const pct = st.games ? Math.round(100 * st.wins / st.games) + '%' : '—';
+  return `<div class="statgrid">
+    <div><b>${st.games}</b>партій</div><div><b>${st.wins}</b>перемог</div><div><b>${pct}</b>виграно</div>
+    <div><b>${st.goats}</b>разів козел</div><div><b>${st.milkGoats}</b>молочний</div><div><b>${st.bestStreak}</b>найкраща серія</div>
+    <div><b>${st.deals}</b>роздач</div><div><b>${st.intercepts}</b>перехоплень</div><div><b>${st.eggs}</b>разів яйця</div></div>`;
+}
+function openStats(tab) {
+  G.statsTab = tab || 'me';
+  if (window.KOZEL_ONLINE && !openStats.asked) { openStats.asked = true; netSend({ t: 'stats' }); }
+  const T = [['me', 'Мої'], ['friends', 'Друзі'], ['ach', 'Нагороди']];
+  let h = `<h2>Статистика</h2><div class="tabs">` + T.map(([k, t]) => `<button class="btn${k === G.statsTab ? ' primary' : ''}" data-stab="${k}">${t}</button>`).join('') + `</div>`;
+  const ns = G.netStats;
+  if (G.statsTab === 'me') {
+    h += `<div class="menu-lbl">З ботами</div>` + statGrid(G.localStats);
+    if (window.KOZEL_ONLINE) h += `<div class="menu-lbl">Онлайн з друзями</div>` + (ns ? statGrid(ns.me) : `<p>Завантажуємо…</p>`);
+  } else if (G.statsTab === 'friends') {
+    h += `<p>Хто в нашій компанії найбільший козел: рахуються онлайн-партії з тими, з ким ви грали за одним столом.</p>`;
+    const board = ns ? ns.board : null;
+    if (!window.KOZEL_ONLINE) h += `<p>Рейтинг друзів працює в онлайн-версії гри в Telegram.</p>`;
+    else if (!board) h += `<p>Завантажуємо…</p>`;
+    else if (board.length < 2) h += `<p>Поки що порожньо. Зіграйте онлайн з друзями, і тут з’явиться рейтинг вашої компанії.</p>`;
+    else {
+      h += `<table class="lb"><tr><th>#</th><th>Гравець</th><th>Партій</th><th>Перемог</th><th>🐐</th><th>🥛</th></tr>`;
+      board.forEach((r, i) => {
+        h += `<tr class="${r.me ? 'me' : ''}"><td>${i === 0 ? '🐐' : i + 1}</td><td><span class="nmx"><span class="mini-ava sm">${esc((r.name[0] || '?').toUpperCase())}${r.ava ? `<img src="${r.ava}" alt="" onerror="this.remove()">` : ''}</span>${esc(r.name)}${r.me ? ' (ви)' : ''}</span></td>` +
+          `<td>${r.games}</td><td>${r.wins}</td><td><b>${r.goats}</b></td><td>${r.milkGoats}</td></tr>`;
+      });
+      h += `</table><p class="rv-legend">🐐 — скільки разів ставав козлом, 🥛 — з них молочним.</p>`;
+    }
+  } else {
+    const got = achUnlocked();
+    h += `<p>Відкрито ${got.size} з ${Stats.ACH.length}. Рахуються і гра з ботами, і онлайн.</p><div class="achs">` +
+      Stats.ACH.map(a => `<div class="ach${got.has(a.id) ? '' : ' locked'}"><i>${a.icon}</i><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span></div></div>`).join('') + `</div>`;
+  }
+  h += `<div class="stack"><button class="btn" id="statsBack">Назад</button></div>`;
+  openSheet(h, 'stats');
+  document.querySelectorAll('[data-stab]').forEach(b => b.onclick = () => openStats(b.dataset.stab));
+  $('statsBack').onclick = () => openMenu(true);
+}
+
+// ---------- Налаштування (екран) ----------
+function openSettings() {
+  const row = (lbl, key, opts) => `<div class="setrow"><div class="menu-lbl">${lbl}</div><div class="row${opts.length === 4 ? ' two' : ''}">` +
+    opts.map(([v, t]) => `<button class="btn${G.set[key] === v ? ' primary' : ''}" data-set="${key}" data-val="${v}" aria-pressed="${G.set[key] === v}">${t}</button>`).join('') + `</div></div>`;
+  const sw = c => `<span class="swatch" style="background:${c}"></span>`;
+  let h = `<h2>Налаштування</h2>`;
+  h += row('Швидкість карт', 'speed', [['slow', 'Повільно'], ['normal', 'Звичайно'], ['fast', 'Швидко']]);
+  h += row('Таймер на хід у грі з ботами', 'timer', [[true, 'Хвилина'], [false, 'Без таймера']]);
+  h += row('Сукно', 'table', [['wood', sw('#4a3222') + 'Дерево'], ['green', sw('#2f6b45') + 'Зелене'], ['blue', sw('#2d5376') + 'Синє']]);
+  h += row('Сорочка карт', 'back', [['bordo', sw('#6b1f2a') + 'Бордо'], ['blue', sw('#1f4a7a') + 'Синя'], ['green', sw('#2a6a45') + 'Зелена'], ['black', sw('#2b2724') + 'Чорна']]);
+  h += row('Звуки', 'sfx', [[true, 'Увімкнено'], [false, 'Вимкнено']]);
+  h += `<div class="setrow"><div class="menu-lbl">Фонова музика</div><div class="row"><button class="btn${Music.on ? ' primary' : ''}" id="musOn">Увімкнено</button><button class="btn${Music.on ? '' : ' primary'}" id="musOff">Вимкнено</button></div></div>`;
+  if (TG && tgv('8.0')) {
+    h += `<div class="setrow"><div class="menu-lbl">Telegram</div><div class="stack" style="margin-top:0">`;
+    h += `<button class="btn" id="fsBtn">${TG.isFullscreen ? 'Вийти з повного екрана' : 'На весь екран'}</button>`;
+    if (G.homeStatus !== 'added' && G.homeStatus !== 'unsupported') h += `<button class="btn" id="homeBtn">Додати ярлик на головний екран</button>`;
+    h += `</div></div>`;
+  }
+  h += `<div class="stack"><button class="btn primary" id="setDone">Готово</button></div>`;
+  openSheet(h, 'settings');
+  document.querySelectorAll('[data-set]').forEach(b => b.onclick = () => {
+    const k = b.dataset.set, raw = b.dataset.val;
+    G.set[k] = raw === 'true' ? true : raw === 'false' ? false : raw;
+    if (k === 'timer' && !G.net.room && G.deal && L.toAct(G.deal) === 0) G.turnLeft = G.set.timer ? TURN_MS : null;
+    saveSet(); render(); openSettings();
+    if (k === 'sfx' && G.set.sfx) Sfx.play('card');
+  });
+  $('musOn').onclick = () => { if (!Music.on) Music.toggle(); openSettings(); };
+  $('musOff').onclick = () => { if (Music.on) Music.toggle(); openSettings(); };
+  if ($('fsBtn')) $('fsBtn').onclick = () => { try { TG.isFullscreen ? TG.exitFullscreen() : TG.requestFullscreen(); } catch (e) {} };
+  if ($('homeBtn')) $('homeBtn').onclick = () => { try { TG.addToHomeScreen(); } catch (e) {} };
+  $('setDone').onclick = () => openMenu(true);
+}
+if (TG && tgv('8.0')) {
+  const fs = () => { document.body.classList.toggle('tg-fs', !!TG.isFullscreen); if (G.sheetKind === 'settings') openSettings(); };
+  TG.onEvent('fullscreenChanged', fs); fs();
+  TG.onEvent('homeScreenAdded', () => { G.homeStatus = 'added'; if (G.sheetKind === 'settings') openSettings(); });
+  try { TG.checkHomeScreenStatus(st => { G.homeStatus = st; }); } catch (e) {}
+}
+// Дозвіл боту писати в особисті (щоб він міг нагадати, що вас чекають за столом)
+function askWrite() {
+  if (!TG || !tgv('6.9') || askWrite.done) return;
+  askWrite.done = true;
+  const u = TG.initDataUnsafe && TG.initDataUnsafe.user;
+  if (u && u.allows_write_to_pm) return;
+  if (KV.local('kozel-asked-write')) return;
+  KV.local('kozel-asked-write', '1');
+  try { TG.requestWriteAccess(); } catch (e) {}
+}
+
+// ---------- Збережена партія з ботами (переживає закриття Telegram) ----------
+function saveGame(betweenDeals) {
+  if (G.net.room || !G.started || G.tut || !G.ser || G.ser.over) return;
+  const o = { v: 1, mode: G.ser.n, seriesMode: G.seriesMode || G.mode, level: G.level, goal: G.goal, ser: G.ser,
+    deal: betweenDeals || !G.deal ? null : L.packState(G.deal), elapsed: Date.now() - (G.gameStart || Date.now()), ts: Date.now() };
+  G.saved = o;
+  KV.set('kozel-save', JSON.stringify(o), 1500);
+}
+function clearSave() { G.saved = null; KV.set('kozel-save', null); }
+KV.get('kozel-save').then(v => {
+  try {
+    const o = v && JSON.parse(v);
+    if (o && o.v === 1 && o.ser && !o.ser.over) {
+      G.saved = o;
+      if (G.sheetKind === 'menu' && !G.started && !G.net.room) openMenu(G.menuByUser);
+    }
+  } catch (e) {}
+});
+function resumeSaved() {
+  const o = G.saved; if (!o) return;
+  if (G.net.room) { netSend({ t: 'leave' }); G.net.room = null; }
+  clearTimeout(G.timer);
+  G.tut = null; Tut.show();
+  G.mode = o.mode; G.seriesMode = o.seriesMode; G.level = o.level; G.goal = o.goal;
+  G.ser = o.ser; G.started = true; G.gameStart = Date.now() - (o.elapsed || 0);
+  tgGuard(true); closeSheet();
+  if (!o.deal) { startDeal(false); return; }
+  G.deal = L.unpackState(o.deal); G.sel.clear(); G.notes = []; G.chips = {}; G.prompt = ''; G.busy = false;
+  G.pending = `Партію відновлено. Роздача ${G.ser.dealNo + 1}, козир ${L.SUIT_SYM[G.deal.trump]} ${L.SUIT_NAME[G.deal.trump]}.`;
+  render(); later(step, 700);
+}
+
+// ---------- Взятки після роздачі: хто що забрав ----------
+function revealHtml(rv, n, trump) {
+  if (!rv || !rv.length) return '';
+  const pts = c => L.ptsOf(c);
+  let h = `<details class="reveal" open><summary style="cursor:pointer;font-family:var(--serif);font-weight:800;font-size:1.05rem">Хто що забрав</summary>`;
+  for (let i = 0; i < rv.length; i++) {
+    const cards = rv[i].slice().sort((a, b) => pts(b[0]) - pts(a[0]) || L.suitOf(a[0]) - L.suitOf(b[0]) || L.rankOf(b[0]) - L.rankOf(a[0]));
+    const sum = cards.reduce((t, e) => t + pts(e[0]), 0);
+    const team = n === 4 ? (i % 2 === 0 ? ' · наші' : ' · їхні') : '';
+    h += `<div class="rv-row"><div class="rv-head"><span>${esc(nm(i))}${team}</span><span><b>${sum}</b> ${plural(sum, 'очко', 'очки', 'очок')}</span></div><div class="rv-cards">`;
+    if (!cards.length) h += `<span class="rv-empty">жодної взятки</span>`;
+    for (const [c, hid] of cards) {
+      const s = L.suitOf(c);
+      const cls = 'rc' + (s >= 2 ? ' red' : '') + (pts(c) ? '' : ' zero') + (s === trump ? ' trump' : '') + (hid ? ' disc' : '');
+      h += `<span class="${cls}" title="${hid ? 'скинута сорочкою догори' : ''}">${L.RANK_LABEL[L.rankOf(c)]}${L.SUIT_SYM[s]}</span>`;
+    }
+    h += `</div></div>`;
+  }
+  h += `<p class="rv-legend">Пунктиром — карти, скинуті сорочкою догори. Золота рамка — козирі.</p></details>`;
+  return h;
+}
+
+// ---------- Підказка (лише в грі з ботами) ----------
+function doHint() {
+  const s = G.deal;
+  if (!s || G.busy || L.toAct(s) !== 0) return;
+  const a = AI.chooseAction(s, 'medium', G.rng);
+  if (!a) return;
+  if (a.cards) { G.sel = new Set(a.cards); render(); }
+  const txt = {
+    attack: () => 'Порада: походити ' + labels(a.cards),
+    cover: () => 'Порада: побити ' + labels(a.cards),
+    discard: () => 'Порада: скинути ' + labels(a.cards),
+    intercept: () => 'Порада: перехопити хід чотирма картами',
+    pass: () => 'Порада: не перехоплювати',
+  }[a.type];
+  toast(txt ? txt() : 'Порада готова');
+  haptic.tap();
+}
+
+// ---------- Навчання: кілька підготовлених роздач ----------
+const Tut = {
+  C(t) { const m = /^(10|[6-9ВДКТ])([♠♣♥♦])$/.exec(t); return L.SUIT_SYM.indexOf(m[2]) * 9 + L.RANK_LABEL.indexOf(m[1]); },
+  LESSONS: [
+    { title: 'Хід', me: ['9♠', '9♥', '9♦', 'К♣'], bot: ['7♠', '8♥', '6♦', 'Д♠'], trump: '♣', attacker: 0,
+      text: 'Ходити можна однією картою або кількома <b>одного номіналу</b> чи <b>однієї масті</b>. Виберіть три дев’ятки й натисніть «Походити».',
+      check: a => (a.type === 'attack' && a.cards.length === 3 && a.cards.every(c => L.rankOf(c) === 3)) || 'Виберіть усі три дев’ятки: ♠, ♥ і ♦.',
+      done: 'Бот не зміг побити всі три карти, тож скинув три сорочкою догори. Взятка ваша разом із його скинутими картами. На двох так: або б’єш усі карти, або скидаєш стільки ж.' },
+    { title: 'Побити', me: ['К♥', '7♠', '6♦', 'Т♣'], bot: ['Д♥', '8♠', '9♦', '7♥'], trump: '♣', attacker: 1, botAttack: ['Д♥'],
+      text: 'Бот походив дамою ♥. Бити треба <b>старшою картою тієї ж масті</b> або козирем. Виберіть короля ♥ і натисніть «Побити».',
+      check: a => a.type === 'cover' || 'Цю карту можна побити: королем ♥ (або козирем, але козиря краще берегти).',
+      done: 'Ви побили, тож взятка ваша, і наступний хід теж ваш. Старшинство: 6, 7, 8, 9, валет, дама, король, <b>10</b>, туз. Десятка старша за короля.' },
+    { title: 'Козир', me: ['7♣', '9♣', '6♠', '8♥'], bot: ['10♦', 'Т♦', 'В♠', '6♥'], trump: '♣', attacker: 1, botAttack: ['10♦', 'Т♦'],
+      text: 'Козир тут — трефи ♣ (масть карти, що світить під колодою). Бот ходить двома бубнами. Бубен у вас немає, тож бийте <b>козирями</b>: кожну карту окремою картою.',
+      check: a => a.type === 'cover' || 'Виберіть обидві трефи (7♣ і 9♣): вони козирі й б’ють будь-яку бубну.',
+      done: 'Будь-який козир б’є будь-яку карту іншої масті. Ви забрали 21 очко двома дрібними козирями!' },
+    { title: 'Скинути', me: ['6♥', '7♦', 'Т♥', '8♦'], bot: ['Т♠', 'В♥', 'Д♦', '9♠'], trump: '♣', attacker: 1, botAttack: ['Т♠'],
+      text: 'Бот ходить тузом ♠. Пік і козирів у вас немає, побити нічим. Тоді <b>скидаєте</b> стільки ж карт сорочкою догори. Скиньте найдешевшу.',
+      check: a => (a.type === 'discard' && L.ptsOf(a.cards[0]) === 0) || (a.type === 'discard' ? 'Туз — це 11 очок, шкода віддавати. Скиньте шістку, сімку чи вісімку.' : 'Виберіть одну дешеву карту й натисніть «Скинути».'),
+      done: 'Взятку забрав бот, але ваша скинута карта не принесла йому жодного очка. Що саме ви скинули, ніхто не бачить до кінця роздачі.' },
+    { title: 'Перехоплення', me: ['В♠', 'В♥', 'В♣', 'В♦'], bot: ['8♠', '6♥', '7♦', '9♠'], trump: '♣', attacker: 1, botAttack: ['8♠'],
+      text: 'Бот походив вісімкою ♠. У вас <b>чотири валети</b>, тобто чотири карти одного номіналу. Можна перехопити хід: карта бота повернеться йому, а бити доведеться вже йому. Натисніть «Перехопити 4 картами».',
+      check: a => a.type === 'intercept' || 'Натисніть «Перехопити 4 картами».',
+      done: 'Бот не зміг побити чотири валети й скинув чотири карти. Взятка ваша. Перехопити можна, коли на руці 4 карти однієї масті або одного номіналу.' },
+  ],
+  deal(L_) {
+    const C = this.C.bind(this), me = L_.me.map(C), bot = L_.bot.map(C), trump = L.SUIT_SYM.indexOf(L_.trump);
+    const used = new Set([...me, ...bot]);
+    const rest = [...Array(36).keys()].filter(c => !used.has(c));
+    const trumpCard = rest.find(c => L.suitOf(c) === trump);
+    const stock = L.shuffle(rest.filter(c => c !== trumpCard), G.rng); stock.push(trumpCard);
+    return { n: 2, trump, trumpCard, stock, hands: [me, bot], piles: [[], []], attacker: L_.attacker, phase: 'attack', table: null,
+      lastTrick: null, trumpHolder: null, known: [new Map(), new Map()], knownHidden: [new Set(), new Set()], trumpChanges: 0 };
+  },
+  start(i) {
+    if (G.net.room) { netSend({ t: 'leave' }); G.net.room = null; }
+    clearTimeout(G.timer);
+    const les = this.LESSONS[i];
+    if (!les) return this.finale();
+    G.tut = { i, err: '' }; G.mode = 2; G.started = true; G.gameStart = null;
+    G.ser = L.newSeries(2, 12); G.deal = this.deal(les);
+    G.sel.clear(); G.notes = []; G.chips = { [les.attacker]: 'перший' }; G.prompt = ''; G.pending = ''; G.busy = false; G.turnLeft = null;
+    closeSheet(); this.show(); render(); later(step, 900);
+  },
+  show() {
+    const el = $('tut');
+    if (!G.tut) { el.hidden = true; return; }
+    const les = this.LESSONS[G.tut.i];
+    el.innerHTML = `<button class="x" id="tutX" aria-label="Вийти з навчання">✕</button><b class="t">Урок ${G.tut.i + 1} з ${this.LESSONS.length}: ${les.title}</b>${les.text}` +
+      (G.tut.err ? `<span class="err">${G.tut.err}</span>` : '');
+    el.hidden = false;
+    $('tutX').onclick = () => { G.tut = null; this.show(); G.started = false; G.deal = null; G.ser = null; clearTimeout(G.timer); render(); openMenu(true); };
+  },
+  check(a) {
+    const r = this.LESSONS[G.tut.i].check(a);
+    if (r === true) { G.tut.err = ''; this.show(); return true; }
+    G.tut.err = r; this.show(); haptic.bad(); return false;
+  },
+  botAction(s) {
+    const les = this.LESSONS[G.tut.i];
+    if (s.phase === 'attack' && les.botAttack && !G.tut.botDone) { G.tut.botDone = true; return { type: 'attack', cards: les.botAttack.map(c => this.C(c)) }; }
+    return AI.chooseAction(s, 'easy', G.rng);
+  },
+  done() {
+    const i = G.tut.i, les = this.LESSONS[i], last = i === this.LESSONS.length - 1;
+    haptic.good(); Sfx.play('ach');
+    $('tut').hidden = true;
+    openSheet(`<h2>✓ ${les.title}</h2><p>${les.done}</p><div class="stack"><button class="btn primary" id="tutNext">${last ? 'Останнє: як рахуються очки' : 'Наступний урок'}</button><button class="btn" id="tutMenu">Вийти в меню</button></div>`, 'tutorial');
+    $('tutNext').onclick = () => this.start(i + 1);
+    $('tutMenu').onclick = () => { G.tut = null; G.started = false; G.deal = null; G.ser = null; render(); openMenu(true); };
+  },
+  finale() {
+    G.tut = null; this.show(); G.started = false; G.deal = null; G.ser = null; render();
+    openSheet(`<h2>Рахунок і козел</h2><div class="rules"><p>Очки в картах: туз 11, десятка 10, король 4, дама 3, валет 2, решта 0. Усього в колоді 120.</p>
+      <p>Після роздачі рахують очки у взятках. Хто набрав менше 60, отримує <b>штрафні</b>: 1 штрафне, якщо менше 60; 2 — якщо 30 і менше; 4 — якщо жодного очка. 60 на 60 — «яйця»: наступна роздача зі штрафами ×2.</p>
+      <p>Хто першим набере 12 штрафних — <b>козел</b>. А якщо в когось 6, а в суперника жодного — це <b>молочний козел</b>, і гра закінчується одразу.</p></div>
+      <div class="stack"><button class="btn primary" id="tutPlay">Зіграти з ботом «Новачок»</button><button class="btn" id="tutMenu">У меню</button></div>`, 'tutorial');
+    $('tutPlay').onclick = () => { G.mode = 2; G.level = 'easy'; clearSave(); startSeries(); };
+    $('tutMenu').onclick = () => openMenu(true);
+  },
+};
+
+// ---------- Поділитися результатом: картинка + Telegram ----------
+const Share = {
+  pending: null,
+  async draw(ser, losers) {
+    const W = 1080, H = 1350, cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const g = cv.getContext('2d'), css = getComputedStyle(document.documentElement);
+    const v = k => css.getPropertyValue(k).trim();
+    try { await document.fonts.ready; } catch (e) {}
+    const bg = g.createRadialGradient(W / 2, H * 0.42, 60, W / 2, H * 0.5, H * 0.8);
+    bg.addColorStop(0, v('--wood-1') || '#4a3222'); bg.addColorStop(1, v('--wood-2') || '#2b1d14');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.globalAlpha = 0.05; g.fillStyle = '#ffdcaa';
+    for (let x = 0; x < W; x += 9) g.fillRect(x, 0, 2, H);
+    g.globalAlpha = 1;
+    const ink = '#f6efdf', brass = '#d4a73a';
+    g.textAlign = 'center'; g.fillStyle = ink;
+    g.font = '800 64px "Playfair Display", Georgia, serif'; g.fillText('Боярський козел', W / 2, 120);
+    // козел
+    const img = new Image();
+    await new Promise(res => { img.onload = res; img.onerror = res; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(goatSvg(0).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="520" height="520" ')); });
+    try { g.drawImage(img, W / 2 - 260, 170, 520, 520); } catch (e) {}
+    const n = ser.n;
+    const names = losers.map(p => nm(p) === 'Ви' ? (G.net.me ? G.net.me.name : 'Я') : nm(p)).join(' і ');
+    const word = losers.length > 1 ? (ser.milk ? 'МОЛОЧНІ КОЗЛИ' : 'КОЗЛИ') : (ser.milk ? 'МОЛОЧНИЙ КОЗЕЛ' : 'КОЗЕЛ');
+    g.font = '700 62px "Playfair Display", Georgia, serif'; g.fillStyle = ink;
+    g.fillText(names.length > 30 ? names.slice(0, 29) + '…' : names, W / 2, 780);
+    g.font = '800 104px "Playfair Display", Georgia, serif'; g.fillStyle = brass;
+    g.fillText(word, W / 2, 900);
+    // рахунок
+    const rows = n === 4 ? [['Ми', ser.penalties[0]], ['Вони', ser.penalties[1]]]
+      : [...Array(n).keys()].map(i => [nm(i) === 'Ви' ? (G.net.me ? G.net.me.name : 'Я') : nm(i), ser.penalties[i]]);
+    g.font = '500 44px Rubik, system-ui, sans-serif'; g.fillStyle = ink;
+    const top = 990, lh = 64;
+    rows.forEach(([name, pen], i) => {
+      const y = top + i * lh;
+      g.textAlign = 'left'; g.fillText(String(name).slice(0, 22), 250, y);
+      g.textAlign = 'right'; g.fillText(pen + ' штрафних', W - 250, y);
+    });
+    g.textAlign = 'center'; g.font = '400 34px Rubik, system-ui, sans-serif'; g.fillStyle = 'rgba(246,239,223,.7)';
+    const cfg = window.KOZEL_ONLINE || {};
+    g.fillText(new Date().toLocaleDateString('uk-UA') + (cfg.bot ? `  ·  @${cfg.bot}` : ''), W / 2, H - 60);
+    return { data: cv.toDataURL('image/jpeg', 0.86), text: `${names}: ${word.toLowerCase()} 🐐 (${rows.map(r => r[1]).join(' : ')}) — «Боярський козел»` };
+  },
+  async result(ser, losers) {
+    toast('Готуємо картинку…');
+    let pic;
+    try { pic = await this.draw(ser, losers); } catch (e) { toast('Не вдалося намалювати картинку'); return; }
+    this.pic = pic;
+    if (window.KOZEL_ONLINE) {
+      netSend({ t: 'share', img: pic.data, text: pic.text });
+      this.timer = setTimeout(() => this.ready({}), 8000);
+    } else this.ready({});
+  },
+  ready(m) {
+    clearTimeout(this.timer);
+    const pic = this.pic; if (!pic) return;
+    this.pic = null;
+    const url = m.url || null;
+    let h = `<h2>Поділитися</h2><img class="share-prev" src="${pic.data}" alt="Результат партії">`;
+    h += `<div class="stack">`;
+    if (m.prepared && TG && tgv('8.0')) h += `<button class="btn primary" id="shMsg">Надіслати в чат</button>`;
+    if (url && TG && tgv('7.8')) h += `<button class="btn" id="shStory">Опублікувати в історії</button>`;
+    if (!m.prepared && TG) h += `<button class="btn${m.prepared ? '' : ' primary'}" id="shLink">Надіслати посилання на гру</button>`;
+    if (url && TG && tgv('8.0')) h += `<button class="btn" id="shSave">Зберегти картинку</button>`;
+    else if (!TG) h += `<button class="btn primary" id="shNative">Поділитися / зберегти</button>`;
+    h += `<button class="btn" id="shBack">Назад</button></div>`;
+    const prevKind = G.sheetKind;
+    openSheet(h, 'share');
+    const back = () => { if (prevKind === 'dealEnd' && G.lastDealEnd) G.lastDealEnd(); else closeSheet(); };
+    $('shBack').onclick = back;
+    if ($('shMsg')) $('shMsg').onclick = () => { try { TG.shareMessage(m.prepared, ok => { if (ok) toast('Надіслано'); }); } catch (e) {} };
+    if ($('shStory')) $('shStory').onclick = () => {
+      try { TG.shareToStory(url, { text: pic.text.slice(0, 200), widget_link: m.link ? { url: m.link, name: 'Грати' } : undefined }); } catch (e) { toast('Історії недоступні'); }
+    };
+    if ($('shLink')) $('shLink').onclick = () => {
+      const link = m.link || location.origin;
+      TG.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(pic.text));
+    };
+    if ($('shSave')) $('shSave').onclick = () => { try { TG.downloadFile({ url, file_name: 'kozel.jpg' }); } catch (e) {} };
+    if ($('shNative')) $('shNative').onclick = async () => {
+      try {
+        const blob = await (await fetch(pic.data)).blob();
+        const file = new File([blob], 'kozel.jpg', { type: 'image/jpeg' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text: pic.text }); return; }
+      } catch (e) { if (e && e.name === 'AbortError') return; }
+      const a = document.createElement('a'); a.href = pic.data; a.download = 'kozel.jpg'; document.body.appendChild(a); a.click(); a.remove();
+    };
+  },
+};
+
 G.prompt = 'Оберіть гру в меню.';
 render();
 openMenu();
