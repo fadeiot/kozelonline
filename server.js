@@ -270,14 +270,15 @@ function botName(room) {
 }
 const humans = room => room.seats.filter(x => x && x.type === 'human');
 
-function createRoom(user, n, level, goal) {
+// Стіл: гравці сідають по черзі (до 4). Скільки сіло — такий і формат: 2 — на двох, 3 — на трьох, 4 — пара на пару.
+function createRoom(user, goal) {
   const room = {
-    code: newCode(), n, level: 'slava', goal: goal === 6 ? 6 : 12, hostId: user.id,
-    seats: new Array(n).fill(null), status: 'lobby', ser: null, deal: null,
+    code: newCode(), n: 1, level: 'slava', goal: goal === 6 ? 6 : 12, hostId: user.id, ownerId: user.id,
+    seats: [], status: 'lobby', ser: null, deal: null,
     ev: null, evSeq: 0, result: null, rec: null, reveal: null, ready: new Set(), timer: null, turnTimer: null, emptySince: null,
     chat: [], chatSeq: 0, duo: new Set(), absSig: '',
   };
-  room.seats[0] = { type: 'human', id: user.id, name: user.name, connected: true };
+  room.seats.push({ type: 'human', id: user.id, name: user.name, connected: true });
   rooms.set(room.code, room); userRoom.set(user.id, room.code); userLast.set(user.id, room.code);
   return room;
 }
@@ -303,11 +304,11 @@ function joinRoom(user, code) {
     room.emptySince = null; userRoom.set(user.id, code); userLast.set(user.id, code);
     return room;
   }
-  if (room.status !== 'lobby') return 'Гра за цим столом уже йде.';
-  const free = room.seats.findIndex(x => x === null);
-  if (free < 0) return 'Усі місця зайняті.';
+  if (room.status !== 'lobby') return 'За цим столом уже грають. Дочекайтеся кінця партії.';
+  if (room.seats.length >= 4) return 'За столом уже 4 гравці.';
   leaveRoom(user.id);
-  room.seats[free] = { type: 'human', id: user.id, name: user.name, connected: true };
+  room.seats.push({ type: 'human', id: user.id, name: user.name, connected: true });
+  room.n = room.seats.length;
   userRoom.set(user.id, code); userLast.set(user.id, code);
   return room;
 }
@@ -320,14 +321,18 @@ function leaveRoom(id) {
   if (!room) return;
   const s = seatOf(room, id);
   if (s < 0) return;
-  if (room.status === 'lobby') { room.seats[s] = null; userLast.delete(id); }
-  else {
+  if (room.status === 'lobby' || room.status === 'over') {
+    // вийшов до початку або після кінця партії — місце звільняється, решта лишається за столом
+    room.seats.splice(s, 1); userLast.delete(id);
+    if (room.status === 'over') { room.status = 'lobby'; room.ser = null; room.deal = null; room.result = null; room.rec = null; room.reveal = null; room.lastTrick = null; room.ready = new Set(); room.duo = new Set(); }
+    room.n = Math.max(1, room.seats.length);
+  } else {
     // вийшов сам через меню: без «запасних» 45 секунд, одразу пауза
     const x = room.seats[s]; x.left = true; x.connected = false; x.awaySince = Date.now() - GRACE_MS;
   }
   if (room.hostId === id) { const h = humans(room).find(x => x.connected); if (h) room.hostId = h.id; }
   if (!humans(room).some(x => x.connected)) room.emptySince = Date.now();
-  if (room.status === 'lobby' && !humans(room).length) { rooms.delete(code); dirty(); return; }
+  if (room.status === 'lobby' && !humans(room).length) { rooms.delete(code); dirty(); presenceSoon(); return; }
   checkAbsence(room);
   broadcast(room);
   schedule(room);
@@ -343,8 +348,8 @@ function viewFor(room, id) {
   const tIdx = t => swap ? 1 - t : t;
   const v = {
     t: 'room', code: room.code, n, status: room.status, level: room.level, goal: room.goal || 12,
-    host: room.hostId === id, mySeat: s,
-    seats: room.seats.map(x => x && { name: x.name, ava: avatarOf(x), bot: x.type === 'bot', connected: x.type === 'bot' || x.connected, me: x.type === 'human' && x.id === id, host: x.type === 'human' && x.id === room.hostId }),
+    host: seatOf(room, id) >= 0, owner: canClose(room, id), mySeat: s,
+    seats: room.seats.map(x => x && { id: x.type === 'human' ? x.id : null, name: x.name, ava: avatarOf(x), bot: x.type === 'bot', connected: x.type === 'bot' || x.connected, me: x.type === 'human' && x.id === id, host: x.type === 'human' && x.id === room.hostId }),
     names: room.seats.map((_, r) => { const x = room.seats[unrot(r)]; return x ? x.name : ''; }),
     online: room.seats.map((_, r) => { const x = room.seats[unrot(r)]; return !x || x.type === 'bot' || x.connected; }),
     auto: room.seats.map((_, r) => room.status !== 'lobby' && absence(room.seats[unrot(r)], now) === 'auto'),
@@ -407,8 +412,11 @@ function viewFor(room, id) {
 function lastRoomFor(id) {
   const code = userLast.get(id), room = code && rooms.get(code);
   if (!room || room.status === 'lobby' || seatOf(room, id) < 0) return null;
-  return { code, n: room.n };
+  return { code, n: room.n, owner: canClose(room, id) };
 }
+// Закрити стіл може той, хто його створив (навіть якщо вийшов у меню), або поточний господар
+const canClose = (room, id) => seatOf(room, id) >= 0 || room.ownerId === id;
+function markBackIfSeated(room, id) { const i = seatOf(room, id); if (i >= 0 && !room.seats[i].connected) { markBack(room.seats[i]); checkAbsence(room); broadcast(room); schedule(room); } }
 // ---------- Чат ----------
 const lastChatAt = new Map();
 function chatFor(room, id, m) {
@@ -444,6 +452,7 @@ function broadcast(room) {
 
 // ---------- Хід гри ----------
 function startSeries(room) {
+  room.n = room.seats.length;
   room.startedAt = Date.now();
   room.ser = E.newSeries(room.n, room.goal); room.result = null; room.rec = null;
   startDeal(room, true);
@@ -578,10 +587,10 @@ const seatIdx = (room, i) => Number.isInteger(i) && i >= 0 && i < room.seats.len
 function handle(ws, user, m) {
   const code = userRoom.get(user.id), room = code && rooms.get(code);
   switch (m.t) {
+    case 'table': // «Грати з друзями»: повертаємо ваш стіл або створюємо новий
     case 'create': {
-      leaveRoom(user.id);
-      const n = [2, 3, 4].includes(m.n) ? m.n : 2;
-      const nr = createRoom(user, n, m.level, m.goal);
+      if (room) { markBackIfSeated(room, user.id); send(ws, viewFor(room, user.id)); sendChatHistory(room, user.id); return; }
+      const nr = createRoom(user, m.goal);
       broadcast(nr); sendChatHistory(nr, user.id);
       return;
     }
@@ -593,6 +602,16 @@ function handle(ws, user, m) {
     }
     case 'leave': { leaveRoom(user.id); send(ws, { t: 'left', lastRoom: lastRoomFor(user.id) }); presenceSoon(); return; }
     case 'ping': return send(ws, { t: 'pong', ts: m.ts });
+    case 'end':
+    case 'close': { // будь-хто за столом може завершити гру для всіх
+      const cr = rooms.get(String(m.code || code || ''));
+      if (!cr) { send(ws, { t: 'left', lastRoom: null }); return; }
+      if (!canClose(cr, user.id)) return send(ws, { t: 'error', msg: 'Ви не за цим столом.' });
+      const inside = seatOf(cr, user.id) >= 0;
+      closeRoom(cr, user.name);
+      if (!inside) send(ws, { t: 'left', lastRoom: null });
+      return;
+    }
     case 'invite': return invite(ws, user, m);
     case 'inviteReply': {
       if (!m.ok && typeof m.to === 'string') send(sockets.get(m.to), { t: 'inviteDeclined', name: user.name });
@@ -605,23 +624,16 @@ function handle(ws, user, m) {
     case 'share': return shareImage(ws, user, m);
   }
   if (!room) return send(ws, { t: 'error', msg: 'Ви не за столом.' });
-  const s = seatOf(room, user.id), isHost = room.hostId === user.id;
+  const s = seatOf(room, user.id), isHost = s >= 0; // усі, хто за столом, мають рівні права
   switch (m.t) {
-    case 'seat': {
-      const i = seatIdx(room, m.i);
-      if (i >= 0 && s >= 0 && room.status === 'lobby' && room.seats[i] === null) { room.seats[i] = room.seats[s]; room.seats[s] = null; broadcast(room); }
-      return;
-    }
-    case 'bot': {
-      const i = seatIdx(room, m.i);
-      if (i >= 0 && isHost && room.status === 'lobby' && room.seats[i] === null) {
-        room.seats[i] = { type: 'bot', level: room.level, name: botName(room) }; broadcast(room);
+    case 'bot': // посадити Дядю Славу (чи іншого бота) на вільне місце
+      if (isHost && room.status === 'lobby' && room.seats.length < 4) {
+        room.seats.push({ type: 'bot', level: room.level, name: botName(room) }); room.n = room.seats.length; broadcast(room);
       }
       return;
-    }
     case 'unbot': {
       const i = seatIdx(room, m.i);
-      if (i >= 0 && isHost && room.status === 'lobby' && room.seats[i] && room.seats[i].type === 'bot') { room.seats[i] = null; broadcast(room); }
+      if (i >= 0 && isHost && room.status === 'lobby' && room.seats[i].type === 'bot') { room.seats.splice(i, 1); room.n = Math.max(1, room.seats.length); broadcast(room); }
       return;
     }
     case 'goal':
@@ -633,13 +645,8 @@ function handle(ws, user, m) {
       }
       return;
     case 'start':
-      if (isHost && room.status === 'lobby' && room.seats.every(Boolean)) startSeries(room);
+      if (isHost && room.status === 'lobby' && room.seats.length >= 2) startSeries(room);
       return;
-    case 'close': { // господар завершує гру достроково й закриває стіл для всіх
-      if (!isHost) return send(ws, { t: 'error', msg: 'Закрити стіл може лише той, хто його створив.' });
-      closeRoom(room, user.name);
-      return;
-    }
     case 'act': {
       // повторна відправка того самого ходу після обриву зв'язку — не помилка, просто надсилаємо поточний стан
       if (m.id && lastActId.get(user.id) === m.id) return send(ws, viewFor(room, user.id));
@@ -760,10 +767,15 @@ function presenceSoon() {
   if (presenceTimer) return;
   presenceTimer = setTimeout(() => {
     presenceTimer = null;
-    const list = presenceList(), sig = JSON.stringify(list);
+    const list = presenceList(), sig = JSON.stringify(list) + Object.keys(stats).length;
     if (sig === presenceSig) return;
     presenceSig = sig;
-    for (const [id, ws] of sockets) send(ws, { t: 'presence', list: list.map(u => u.id === id ? { ...u, me: true } : u) });
+    for (const [id, ws] of sockets) {
+      const fr = (stats[id] && stats[id].friends) || {};
+      const mine = list.map(u => ({ ...u, me: u.id === id, friend: !!fr[u.id] }))
+        .sort((a, b) => (b.me - a.me) || (b.friend - a.friend) || ((a.status === 'free' ? 0 : 1) - (b.status === 'free' ? 0 : 1)) || a.name.localeCompare(b.name));
+      send(ws, { t: 'presence', list: mine });
+    }
   }, 700);
 }
 function invite(ws, user, m) {
@@ -775,11 +787,10 @@ function invite(ws, user, m) {
   if (!tws || to === user.id) return send(ws, { t: 'error', msg: 'Гравець уже вийшов з гри.' });
   if (statusOf(to) !== 'free') return send(ws, { t: 'error', msg: 'Гравець зараз грає за іншим столом.' });
   let room = rooms.get(userRoom.get(user.id));
-  if (room && room.status !== 'lobby') return send(ws, { t: 'error', msg: 'Спершу завершіть поточну гру.' });
-  if (room && !room.seats.some(x => x === null)) return send(ws, { t: 'error', msg: 'За вашим столом немає вільних місць.' });
+  if (room && room.status !== 'lobby') return send(ws, { t: 'error', msg: 'Покликати можна до початку партії.' });
+  if (room && room.seats.length >= 4) return send(ws, { t: 'error', msg: 'За столом уже 4 гравці.' });
   if (!room) {
-    leaveRoom(user.id);
-    room = createRoom(user, [2, 3, 4].includes(m.n) ? m.n : 2, 'slava', m.goal);
+    room = createRoom(user, m.goal);
     broadcast(room); sendChatHistory(room, user.id);
   }
   send(tws, { t: 'invited', code: room.code, n: room.n, from: { id: user.id, name: user.name } });
@@ -856,7 +867,7 @@ let roomsDirty = false;
 function dirty() { roomsDirty = true; }
 function packRoom(r) {
   return {
-    code: r.code, n: r.n, level: r.level, goal: r.goal, hostId: r.hostId, status: r.status,
+    code: r.code, n: r.n, level: r.level, goal: r.goal, hostId: r.hostId, ownerId: r.ownerId || r.hostId, status: r.status,
     seats: r.seats.map(x => x && { ...x }), ser: r.ser, deal: r.deal ? E.packState(r.deal) : null,
     ev: r.ev, evSeq: r.evSeq, result: r.result, rec: r.rec, reveal: r.reveal, lastTrick: r.lastTrick || null, ready: [...r.ready],
     chat: r.chat, chatSeq: r.chatSeq, duo: [...r.duo], startedAt: r.startedAt || null, emptySince: r.emptySince,

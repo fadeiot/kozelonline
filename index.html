@@ -412,6 +412,22 @@ body.tg-fs .toast{top:calc(12px + var(--tg-safe-area-inset-top,0px) + var(--tg-c
 .seatrow .who i[class^="st-"]{font-style:normal;font-size:.74rem;margin-left:6px;padding:2px 7px;border-radius:9px;background:rgba(0,0,0,.2);color:var(--ink-muted)}
 .seatrow .who i.st-free{color:#9fd08a}
 .seatrow .who{display:flex;align-items:center}
+.cur{display:flex;align-items:center;gap:12px;border:1.5px solid var(--brass);border-radius:14px;padding:12px 12px 12px 14px;margin:6px 0 4px;background:rgba(212,167,58,.08)}
+.cur>div{flex:1;min-width:0}
+.cur b{display:block;font-size:1rem}
+.cur small{display:block;color:var(--ink-muted);font-size:.82rem;margin-top:2px}
+.cur .btn{flex:none;padding:0 16px}
+.btn.btn-lg{min-height:58px;font-size:1.06rem}
+.linkbtn{background:none;border:0;color:var(--ink-muted);font:500 .86rem var(--sans);padding:8px 2px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;align-self:flex-start}
+.linkbtn.danger{color:#e0786d}
+.linkbtn:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+details.opts{margin:2px 0 6px}
+details.opts summary{cursor:pointer;color:var(--ink-muted);font-size:.86rem;padding:6px 2px}
+details.opts .row{margin-top:8px}
+details.rulesbox{margin-top:16px;border-top:1px solid var(--line);padding-top:8px}
+details.rulesbox summary{cursor:pointer;font-family:var(--serif);font-weight:800;font-size:1.05rem;padding:6px 0}
+.seatrow.addbot{width:100%;justify-content:center;background:transparent;border-style:dashed;color:var(--ink-muted);font:600 .92rem var(--sans);cursor:pointer}
+.seatrow .who i.st-team{color:var(--brass)}
 </style>
 </head>
 <body>
@@ -501,9 +517,9 @@ const NAMES = { 2: [null, { nom: 'Дядя Слава', gen: 'Дяді Слав�
   4: [null, { nom: 'Кум', gen: 'Кума' }, { nom: 'Брат', gen: 'Брата' }, { nom: 'Дядя Слава', gen: 'Дяді Слави' }] };
 const MODE_NAME = { 2: 'На двох', 3: 'На трьох', 4: 'Пара на пару' };
 const isMate = p => n_() === 4 && p === 2;
-const n_ = () => G.deal ? G.deal.n : G.mode;
+const n_ = () => G.deal ? G.deal.n : (G.net.room ? Math.max(1, G.net.room.n) : G.mode);
 G.level = 'slava';
-const nm = p => p === 0 ? 'Ви' : (G.net.room ? G.net.names[p] : NAMES[n_()][p].nom);
+const nm = p => p === 0 ? 'Ви' : (G.net.room ? (G.net.names[p] || '') : NAMES[n_()][p].nom);
 const gen = p => G.net.room ? nm(p) : NAMES[n_()][p].gen;
 const esc = t => String(t).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
@@ -942,6 +958,7 @@ function startSeries() {
   G.ser = L.newSeries(G.mode, G.goal); G.started = true; closeSheet(); startDeal(true);
 }
 function startDeal(first) {
+  G.dealEndOpen = false;
   const s = L.newDeal(G.rng, G.ser.n, first, G.ser.nextStarter);
   G.lastTrick = null;
   G.deal = s; G.sel.clear(); G.notes = []; G.prompt = ''; G.chips = {}; G.fly = -1; G.turnLeft = null;
@@ -1019,21 +1036,21 @@ function showDealEnd(res, rec, ser, reveal, trump) {
     const canDuo = n === 3 && ser.losers.length === 1 && !ser.losers.includes(0) && survivorsOk && (!on || G.net.room.canDuo);
     h += `<div class="stack">`;
     if (canDuo) h += `<button class="btn primary" id="duoBtn">Дограти вдвох до фіналу</button>`;
-    if (on) h += `<button class="btn${canDuo ? '' : ' primary'}" id="next">Реванш</button>`;
-    else h += `<button class="btn${canDuo ? '' : ' primary'}" id="rematch">Реванш</button>`;
+    if (on) h += `<button class="btn${canDuo ? '' : ' primary'}" id="next">Ще партію</button>`;
+    else h += `<button class="btn${canDuo ? '' : ' primary'}" id="rematch">Ще партію</button>`;
     h += `<button class="btn" id="shareBtn">Поділитися результатом</button>`;
-    h += on ? `<button class="btn" id="leaveBtn">Вийти з-за столу</button>` : `<button class="btn" id="again">Головне меню</button>`;
+    h += on ? `<button class="btn" id="leaveBtn">Вийти з гри</button>` : `<button class="btn" id="again">Головне меню</button>`;
     h += `</div>`;
   } else {
     h += `<div class="stack"><button class="btn primary" id="next">${on ? 'Далі' : 'Наступна роздача'}</button>` +
-      `<button class="btn" id="exitBtn">Вийти в головне меню</button></div>`;
+      `<button class="btn" id="exitBtn">У головне меню</button></div>`;
   }
   h += revealHtml(reveal, n, trump);
   const openIt = () => {
     openSheet(h, 'dealEnd');
     if ($('rematch')) $('rematch').onclick = () => { G.mode = G.seriesMode || G.mode; startSeries(); };
     if ($('shareBtn')) $('shareBtn').onclick = () => Share.result(ser, losers);
-    if ($('exitBtn')) $('exitBtn').onclick = () => confirmExit(() => showDealEnd(res, rec, ser, reveal, trump));
+    if ($('exitBtn')) $('exitBtn').onclick = () => openMenu(true); // гра лишається, повернутися можна з меню
     if ($('again')) $('again').onclick = openMenu;
     if ($('leaveBtn')) $('leaveBtn').onclick = () => { netSend({ t: 'leave' }); };
     if ($('duoBtn')) $('duoBtn').onclick = () => {
@@ -1047,7 +1064,7 @@ function showDealEnd(res, rec, ser, reveal, trump) {
         : () => { closeSheet(); startDeal(false); };
     }
   };
-  G.lastDealEnd = openIt;
+  G.lastDealEnd = openIt; G.dealEndOpen = true;
   if (over) goatShow(ser, losers, openIt); else openIt();
 }
 
@@ -1175,11 +1192,11 @@ function netOnMessage(m) {
     render(); openMenu(); return;
   }
   if (m.t === 'pong') { G.net.lastPong = Date.now(); G.net.rtt = Date.now() - m.ts; return; }
-  if (m.t === 'presence') { G.presence = m.list; if (G.sheetKind === 'online') openOnline(); paintOnlineBtn(); return; }
+  if (m.t === 'presence') { G.presence = m.list; if (G.sheetKind === 'lobby' && G.net.room && G.net.room.status === 'lobby') showLobby(G.net.room); return; }
   if (m.t === 'invited') { showInvite(m); return; }
   if (m.t === 'inviteDeclined') { toast(`${m.name} зараз не може грати`); return; }
   if (m.t === 'inviteSent') { toast(`Запрошення надіслано: ${m.name}`); return; }
-  if (m.t === 'closed') { toast(`Стіл ${m.code} закрив ${m.by}`); haptic.bad(); return; }
+  if (m.t === 'closed') { toast(`${m.by} завершив гру`); haptic.bad(); return; }
   if (m.t === 'ach') { showAch(m.ids); if (G.netStats) m.ids.forEach(id => { G.netStats.me.ach[id] = Date.now(); }); return; }
   if (m.t === 'stats') { G.netStats = m; if (G.sheetKind === 'stats') openStats(G.statsTab); return; }
   if (m.t === 'shareReady') { Share.ready(m); return; }
@@ -1218,8 +1235,8 @@ function netApply(v) {
   chatPaint();
   // хто вийшов / повернувся — сповіщаємо всіх
   const was = new Set((N.away || []).map(a => a.name)), now = new Set((v.away || []).map(a => a.name));
-  for (const a of v.away || []) if (!was.has(a.name)) { toast(`Гравець ${a.name} вийшов з гри. Гру зупинено.`); haptic.bad(); }
-  for (const nmx of was) if (!now.has(nmx) && v.seats.some(x => x && !x.bot && x.name === nmx)) toast(`Гравець ${nmx} повернувся до гри`);
+  for (const a of v.away || []) if (!was.has(a.name) && notifyOnce('away:' + a.name)) { toast(`Гравець ${a.name} вийшов з гри. Гру зупинено.`); haptic.bad(); }
+  for (const nmx of was) if (!now.has(nmx) && v.seats.some(x => x && !x.bot && x.name === nmx) && notifyOnce('back:' + nmx)) toast(`Гравець ${nmx} повернувся до гри`);
   if (now.size !== was.size || [...now].some(x => !was.has(x))) N.pauseHidden = false;
   N.away = v.away || [];
   renderPause(v);
@@ -1250,7 +1267,7 @@ function netApply(v) {
     if (btn && btn.disabled) {
       btn.textContent = v.waiting.length ? 'Чекаємо: ' + v.waiting.join(', ') : 'Чекаємо інших…';
     }
-  } else if (G.sheetKind === 'dealEnd') closeSheet();
+  } else { G.dealEndOpen = false; if (G.sheetKind === 'dealEnd') closeSheet(); }
 }
 // ---------- Козел: головний гег гри ----------
 const GOAT_BODY = `
@@ -1359,10 +1376,12 @@ function renderPause(v) {
   h += `<p>Гра продовжиться, щойно гравець повернеться за посиланням-запрошенням або кнопкою «Повернутися до гри» в меню.</p><div class="stack">`;
   h += `<button class="btn" id="pauseInvite">Надіслати запрошення ще раз</button>`;
   if (v.host) h += away.map(a => `<button class="btn" data-repl="${a.i}">Посадити бота замість: ${esc(a.name)}</button>`).join('');
+  h += `<button class="btn danger" id="pauseClose">Завершити гру для всіх</button>`;
   h += `<button class="btn" id="pauseMenu">Відкрити меню</button></div>`;
   el.innerHTML = `<div class="pause-card">${h}</div>`;
   el.hidden = false;
   $('pauseInvite').onclick = () => invite(v);
+  if ($('pauseClose')) $('pauseClose').onclick = () => confirmClose($('pauseClose'));
   $('pauseMenu').onclick = () => { G.net.pauseHidden = true; el.hidden = true; openMenu(true); };
   el.querySelectorAll('[data-repl]').forEach(b => b.onclick = () => {
     // друге натискання підтверджує, щоб не замінити гравця випадково
@@ -1376,43 +1395,39 @@ function renderPause(v) {
 }
 function showLobby(v) {
   G.net.lobbyOpen = true;
-  const n = v.n;
-  let h = `<h2>Стіл ${v.code}</h2><p>${MODE_NAME[n]}. Гра до ${v.goal || 12} штрафних. На вільні місця можна посадити Дядю Славу.</p><div class="seats">`;
-  v.seats.forEach((x, i) => {
-    const place = `місце ${i + 1}` + (n === 4 ? `<br>команда ${i % 2 === 0 ? 'А' : 'Б'}` : '');
-    let who, right = '';
-    if (!x) {
-      who = '<i>вільне місце</i>';
-      if (v.host) right += `<button class="mini" data-bot="${i}">+ бот</button>`;
-      right += `<button class="mini" data-seat="${i}">Сісти</button>`;
-    } else {
-      who = `<span class="mini-ava">${esc((x.name[0] || '?').toUpperCase())}${x.ava ? `<img src="${x.ava}" alt="" onerror="this.remove()">` : ''}</span>` +
-        esc(x.name) + (x.me ? ' (ви)' : '') + (x.bot ? ' (бот)' : '') + (x.host ? ' ★' : '');
-      if (x.bot && v.host) right = `<button class="mini" data-unbot="${i}">Прибрати</button>`;
-    }
-    h += `<div class="seatrow${x && x.me ? ' me' : ''}"><span class="no">${place}</span><span class="who">${who}</span>${right}</div>`;
+  const seats = v.seats.filter(Boolean), n = seats.length;
+  const fmt = n >= 4 ? 'пара на пару: перший і третій проти другого й четвертого' : n === 3 ? 'на трьох' : n === 2 ? 'на двох' : '';
+  let h = `<h2>Ваш стіл</h2><p>${n < 2 ? 'Покличте друзів або посадіть Дядю Славу. Грати можна вдвох, утрьох або пара на пару.' : 'Зараз гра ' + fmt + '.'}</p><div class="seats">`;
+  seats.forEach((x, i) => {
+    const ava = `<span class="mini-ava">${esc((x.name[0] || '?').toUpperCase())}${x.ava ? `<img src="${x.ava}" alt="" onerror="this.remove()">` : ''}</span>`;
+    const team = n === 4 ? `<i class="st-team">${i % 2 === 0 ? 'пара 1' : 'пара 2'}</i>` : '';
+    const right = x.bot ? `<button class="mini" data-unbot="${i}" aria-label="Прибрати ${esc(x.name)}">✕</button>` : '';
+    h += `<div class="seatrow${x.me ? ' me' : ''}"><span class="who">${ava}${esc(x.name)}${x.me ? ' (ви)' : ''} ${team}</span>${right}</div>`;
   });
+  if (n < 4) h += `<button class="seatrow addbot" id="addBot">+ Посадити Дядю Славу</button>`;
   h += `</div>`;
-  if (n === 4) h += `<p>Партнери сидять навпроти: команда А — місця 1 і 3, команда Б — місця 2 і 4.</p>`;
-  if (v.host) {
-    h += `<div class="menu-lbl">Довжина гри</div><div class="stack"><div class="row">` +
-      [[12, 'До 12'], [6, 'До 6']].map(([k, t]) =>
-        `<button class="btn${k === (v.goal || 12) ? ' primary' : ''}" data-ngl="${k}">${t}</button>`).join('') + `</div></div>`;
+  h += `<div class="menu-lbl">Довжина гри</div><div class="row">` + [[12, 'До 12 штрафних'], [6, 'До 6']].map(([k, t]) =>
+    `<button class="btn${k === (v.goal || 12) ? ' primary' : ''}" data-ngl="${k}" aria-pressed="${k === (v.goal || 12)}">${t}</button>`).join('') + `</div>`;
+  h += `<div class="stack"><button class="btn primary" id="goBtn"${n >= 2 ? '' : ' disabled'}>${n >= 2 ? 'Почати гру' : 'Почати можна, коли за столом двоє'}</button></div>`;
+  // кого покликати
+  const atTable = new Set(seats.map(x => x.id).filter(Boolean));
+  const others = (G.presence || []).filter(u => !u.me && !atTable.has(u.id));
+  h += `<div class="menu-lbl">Покликати</div><div class="seats">`;
+  if (!others.length) h += `<p>Зараз у грі більше нікого немає. Надішліть друзям посилання — воно відкриє гру одразу за вашим столом.</p>`;
+  for (const u of others) {
+    const ava = `<span class="mini-ava">${esc((u.name[0] || '?').toUpperCase())}${u.ava ? `<img src="${u.ava}" alt="" onerror="this.remove()">` : ''}</span>`;
+    const st = u.status === 'free' ? (u.friend ? '<i class="st-free">грали разом</i>' : '') : `<i>${u.status === 'playing' ? 'грає' : 'за іншим столом'}</i>`;
+    const btn = u.status === 'free' && n < 4 ? `<button class="mini" data-inv="${esc(u.id)}">Покликати</button>` : '';
+    h += `<div class="seatrow"><span class="who">${ava}${esc(u.name)} ${st}</span>${btn}</div>`;
   }
-  h += `<div class="stack"><button class="btn" id="inviteBtn">Запросити друзів</button>`;
-  if (v.host) h += `<button class="btn primary" id="goBtn"${v.seats.every(Boolean) ? '' : ' disabled'}>${v.seats.every(Boolean) ? 'Почати гру' : 'Заповніть усі місця'}</button>`;
-  else h += `<p style="text-align:center">Гру почне господар столу ★</p>`;
-  h += `<button class="btn" id="leaveBtn">Вийти з-за столу</button>`;
-  if (v.host) h += `<button class="btn danger" id="closeTableBtn">Закрити стіл для всіх</button>`;
-  h += `</div>`;
+  h += `</div><div class="stack"><button class="btn" id="inviteBtn">Надіслати посилання</button><button class="btn" id="leaveBtn">Вийти з-за столу</button></div>`;
   openSheet(h, 'lobby');
-  if ($('closeTableBtn')) $('closeTableBtn').onclick = () => confirmClose($('closeTableBtn'));
-  document.querySelectorAll('[data-bot]').forEach(b => b.onclick = () => netSend({ t: 'bot', i: +b.dataset.bot }));
+  if ($('addBot')) $('addBot').onclick = () => netSend({ t: 'bot' });
   document.querySelectorAll('[data-unbot]').forEach(b => b.onclick = () => netSend({ t: 'unbot', i: +b.dataset.unbot }));
-  document.querySelectorAll('[data-seat]').forEach(b => b.onclick = () => netSend({ t: 'seat', i: +b.dataset.seat }));
   document.querySelectorAll('[data-ngl]').forEach(b => b.onclick = () => netSend({ t: 'goal', goal: +b.dataset.ngl }));
+  document.querySelectorAll('[data-inv]').forEach(b => b.onclick = () => { b.disabled = true; b.textContent = 'Покликали'; netSend({ t: 'invite', to: b.dataset.inv }); });
   $('inviteBtn').onclick = () => invite(v);
-  if ($('goBtn')) $('goBtn').onclick = () => netSend({ t: 'start' });
+  $('goBtn').onclick = () => netSend({ t: 'start' });
   $('leaveBtn').onclick = () => { G.net.lobbyOpen = false; netSend({ t: 'leave' }); };
 }
 function invite(v) {
@@ -1428,7 +1443,7 @@ function invite(v) {
 function confirmExit(back) {
   const on = !!G.net.room;
   let h = `<h2>Вийти в головне меню?</h2>`;
-  h += on ? `<p>Гру за столом ${G.net.room.code} буде зупинено, доки ви не повернетесь. Повернутися можна кнопкою «Повернутися до гри» в меню або за посиланням-запрошенням.</p>`
+  h += on ? `<p>Ви лишаєтесь за столом. Повернутися можна з головного меню.</p>`
           : G.tut ? `<p>Навчання можна пройти знову з меню.</p>` : `<p>Поточну партію буде завершено, рахунок не збережеться.</p>`;
   h += `<div class="stack"><button class="btn danger" id="exitYes">Так, вийти</button><button class="btn primary" id="exitNo">Ні, грати далі</button></div>`;
   openSheet(h, 'confirm');
@@ -1439,7 +1454,7 @@ function confirmExit(back) {
   };
   $('exitYes').onclick = () => {
     haptic.act();
-    if (on) { G.net.lobbyOpen = false; netSend({ t: 'leave' }); return; }
+    if (on) { openMenu(true); return; }
     clearTimeout(G.timer);
     if (!G.tut) clearSave();
     G.tut = null; Tut.show();
@@ -1481,48 +1496,60 @@ function openMenu(byUser) {
   G.menuByUser = byUser === true; G.menuHadRoom = !!G.net.room;
   G.net.lobbyOpen = false;
   let mode = G.mode, goal = G.goal;
-  const btns = (key, opts, cur) => `<div class="row${opts.length === 4 ? ' two' : ''}">` + opts.map(([v, t]) =>
+  const btns = (key, opts, cur) => `<div class="row">` + opts.map(([v, t]) =>
     `<button class="btn${v === cur ? ' primary' : ''}" data-${key}="${v}" aria-pressed="${v === cur}">${t}</button>`).join('') + `</div>`;
+  const R = G.net.room, online = !!window.KOZEL_ONLINE;
+  const offGame = G.started && !R && !G.tut && G.ser && !G.ser.over;
+  const saved = !G.started && !R && G.saved;
   let h = `<h2>Боярський козел</h2>`;
-  h += `<div class="menu-lbl">Гравці</div><div class="stack">` + btns('md', [[2, 'На двох'], [3, 'На трьох'], [4, 'Пара на пару']], mode) + `</div>`;
-  h += `<div class="menu-lbl">Довжина гри</div><div class="stack">` + btns('gl', [[12, 'До 12 (повна)'], [6, 'До 6 (коротка)']], goal) + `</div>`;
-  if (G.net.room) h += `<div class="stack"><button class="btn primary" id="resumeBtn">Повернутися за стіл ${G.net.room.code}</button>` +
-    (G.net.room.host ? `<button class="btn danger" id="closeTableBtn">Завершити гру й закрити стіл</button>` : '') + `</div>`;
-  else if (G.net.lastRoom) h += `<div class="stack"><button class="btn primary" id="backToGame">Повернутися до гри (стіл ${G.net.lastRoom.code})</button></div>`;
-  h += `<div class="stack"><button class="btn${G.net.room || G.net.lastRoom ? '' : ' primary'}" id="startBtn">Гра з Дядею Славою</button>`;
-  if (G.started && !G.net.room && !G.tut && G.ser && !G.ser.over) h += `<button class="btn" id="resumeBtn">Продовжити поточну</button>`;
-  else if (!G.started && G.saved && !G.net.room) h += `<button class="btn" id="loadBtn">Продовжити збережену: ${MODE_NAME[G.saved.mode] || ''}, ${G.saved.ser.penalties.join(' : ')}</button>`;
-  h += `</div>`;
-  if (window.KOZEL_ONLINE) {
-    h += `<div class="menu-lbl">З друзями онлайн</div><div class="stack">`;
-    h += `<button class="btn primary" id="onlineBtn">👥 Хто зараз у грі${G.presence ? ` (${G.presence.length})` : ''}</button>`;
-    h += `<button class="btn" id="createBtn">Створити стіл</button>`;
-    h += `<div class="joinrow"><input id="codeIn" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="0000" autocomplete="off" aria-label="Код столу (4 цифри)"><button class="btn" id="joinBtn">Увійти</button></div><p class="menu-err" id="menuErr" role="alert"></p></div>`;
+  // 1. Поточна онлайн-гра — завжди нагорі, один дотик щоб повернутися
+  if (R) {
+    const others = (R.seats || []).filter(x => x && !x.me).map(x => x.name);
+    const title = R.status === 'lobby' ? 'Ви за столом' : 'Ваша онлайн-гра';
+    const sub = (others.length ? 'За столом: ' + others.join(', ') : 'Чекаємо гравців') + (R.status !== 'lobby' && R.ser ? ' · рахунок ' + R.ser.penalties.join(' : ') : '');
+    h += `<div class="cur"><div><b>${esc(title)}</b><small>${esc(sub)}</small></div><button class="btn primary" id="resumeBtn">Повернутися</button></div>`;
+    if (R.status !== 'lobby') h += `<button class="linkbtn danger" id="endOnline">Завершити гру для всіх</button>`;
   }
+  // 2. Дядя Слава
+  h += `<div class="stack">`;
+  if (offGame || saved) h += `<button class="btn btn-lg${R ? '' : ' primary'}" id="${offGame ? 'resumeOff' : 'loadBtn'}">Продовжити з Дядею Славою · ${(offGame ? G.ser : G.saved.ser).penalties.join(' : ')}</button>`;
+  h += `<button class="btn btn-lg${R || offGame || saved ? '' : ' primary'}" id="startBtn">${offGame || saved ? 'Нова гра з Дядею Славою' : 'Грати з Дядею Славою'}</button>`;
+  h += `</div><details class="opts"><summary>${MODE_NAME[mode]} · до ${goal} штрафних</summary>` +
+    btns('md', [[2, 'На двох'], [3, 'На трьох'], [4, 'Пара на пару']], mode) + btns('gl', [[12, 'До 12'], [6, 'До 6']], goal) + `</details>`;
+  if (offGame || saved) h += `<button class="linkbtn danger" id="endOffline">${offGame ? 'Завершити гру з Дядею Славою' : 'Видалити збережену гру'}</button>`;
+  // 3. Друзі
+  if (online && !R) h += `<div class="stack"><button class="btn btn-lg" id="friendsBtn">Грати з друзями</button></div>`;
   h += `<div class="menu-grid"><button class="btn" id="tutBtn"><i>🎓</i>Навчання</button><button class="btn" id="statsBtn"><i>📊</i>Статистика</button><button class="btn" id="setBtn"><i>⚙️</i>Налаштування</button></div>`;
-  h += RULES;
+  h += `<details class="rulesbox"><summary>Правила гри</summary>${RULES}</details>`;
   openSheet(h);
   const wire = (key, set) => document.querySelectorAll(`[data-${key}]`).forEach(b => b.onclick = () => {
     set(b.dataset[key]);
     document.querySelectorAll(`[data-${key}]`).forEach(x => { x.classList.toggle('primary', x === b); x.setAttribute('aria-pressed', x === b); });
+    const sm = document.querySelector('.opts summary'); if (sm) sm.textContent = `${MODE_NAME[mode]} · до ${goal} штрафних`;
   });
   wire('md', v => mode = +v); wire('gl', v => goal = +v);
   $('startBtn').onclick = () => { G.mode = mode; G.level = 'slava'; G.goal = goal; clearSave(); startSeries(); };
-  if ($('resumeBtn')) $('resumeBtn').onclick = () => { if (G.net.room && G.net.room.status === 'lobby') showLobby(G.net.room); else closeSheet(); };
+  if ($('resumeBtn')) $('resumeBtn').onclick = resumeTable;
+  if ($('resumeOff')) $('resumeOff').onclick = resumeTable;
+  if ($('loadBtn')) $('loadBtn').onclick = resumeSaved;
+  if ($('friendsBtn')) $('friendsBtn').onclick = () => { G.goal = goal; G.net.lobbyOpen = true; netSend({ t: 'table', goal }); };
+  if ($('endOnline')) $('endOnline').onclick = () => confirmClose($('endOnline'));
+  if ($('endOffline')) $('endOffline').onclick = () => {
+    const b = $('endOffline');
+    if (!b.dataset.sure) { const t = b.textContent; b.dataset.sure = '1'; b.textContent = 'Точно? Натисніть ще раз'; setTimeout(() => { if (b.isConnected) { delete b.dataset.sure; b.textContent = t; } }, 4000); return; }
+    clearTimeout(G.timer); clearSave(); G.started = false; G.deal = null; G.ser = null; G.chips = {}; G.sel.clear(); G.turnLeft = null; G.gameStart = null; G.undoSnap = null; G.dealEndOpen = false;
+    tgGuard(false); render(); toast('Гру завершено'); openMenu(true);
+  };
   $('tutBtn').onclick = () => Tut.start(0);
-  if ($('onlineBtn')) $('onlineBtn').onclick = () => { G.onlineMode = mode; openOnline(); };
-  if ($('closeTableBtn')) $('closeTableBtn').onclick = () => confirmClose($('closeTableBtn'));
   $('statsBtn').onclick = () => openStats('me');
   $('setBtn').onclick = () => openSettings();
-  if ($('loadBtn')) $('loadBtn').onclick = resumeSaved;
-  if ($('backToGame')) $('backToGame').onclick = () => { G.net.lobbyOpen = true; netSend({ t: 'join', code: G.net.lastRoom.code }); };
-  if ($('createBtn')) $('createBtn').onclick = () => {
-    G.mode = mode; G.goal = goal; G.net.lobbyOpen = true; netSend({ t: 'create', n: mode, goal }); };
-  if ($('joinBtn')) $('joinBtn').onclick = () => {
-    const c = $('codeIn').value.replace(/\D/g, '');
-    if (c.length !== 4) { toast('Код столу — 4 цифри'); return; }
-    G.net.lobbyOpen = true; netSend({ t: 'join', code: c });
-  };
+}
+// Повернутися туди, де ви були: стіл, підсумок роздачі або лобі
+function resumeTable() {
+  const R = G.net.room;
+  if (R && R.status === 'lobby') return showLobby(R);
+  if (G.dealEndOpen && G.lastDealEnd) return G.lastDealEnd();
+  closeSheet();
 }
 $('menuBtn').onclick = () => openMenu(true);
 // ---------- Таймери: загальний час гри і 1 хвилина на хід ----------
@@ -2248,50 +2275,13 @@ function showLastTrick(lt) {
 
 // ===================================================================
 // ---------- Онлайн-кімната: хто зараз у грі, запрошення зіграти ----------
-const STATUS_TXT = { free: 'вільний', lobby: 'за столом, чекає', playing: 'грає' };
-function paintOnlineBtn() {
-  const b = $('onlineBtn');
-  if (b && G.presence) b.textContent = `👥 Хто зараз у грі (${G.presence.length})`;
-}
-function openOnline() {
-  const list = G.presence || [];
-  const mode = G.onlineMode || G.mode;
-  let h = `<h2>Хто зараз у грі</h2><p>Тут усі, хто зараз відкрив «Боярського козла». Запросіть вільного гравця, і для вас створиться стіл.</p>`;
-  h += `<div class="menu-lbl">Гра</div><div class="row">` + [[2, 'На двох'], [3, 'На трьох'], [4, 'Пара на пару']].map(([v, t]) =>
-    `<button class="btn${v === mode ? ' primary' : ''}" data-omd="${v}" aria-pressed="${v === mode}">${t}</button>`).join('') + `</div>`;
-  h += `<div class="seats">`;
-  if (!list.length) h += `<p>Поки що тут нікого немає.</p>`;
-  for (const u of list) {
-    const ava = `<span class="mini-ava">${esc((u.name[0] || '?').toUpperCase())}${u.ava ? `<img src="${u.ava}" alt="" onerror="this.remove()">` : ''}</span>`;
-    const st = `<i class="st-${u.status}">${STATUS_TXT[u.status] || ''}</i>`;
-    const btn = !u.me && u.status === 'free' ? `<button class="mini" data-inv="${esc(u.id)}">Запросити</button>` : '';
-    h += `<div class="seatrow${u.me ? ' me' : ''}"><span class="who">${ava}${esc(u.name)}${u.me ? ' (ви)' : ''} ${st}</span>${btn}</div>`;
-  }
-  h += `</div>`;
-  if (list.length <= 1) h += `<p>Надішліть друзям посилання на гру, і вони з'являться тут.</p>`;
-  h += `<div class="stack"><button class="btn" id="shareGame">Надіслати друзям посилання на гру</button><button class="btn" id="onlineBack">Назад</button></div>`;
-  openSheet(h, 'online');
-  document.querySelectorAll('[data-omd]').forEach(b => b.onclick = () => { G.onlineMode = +b.dataset.omd; openOnline(); });
-  document.querySelectorAll('[data-inv]').forEach(b => b.onclick = () => {
-    b.disabled = true; b.textContent = 'Надіслано';
-    G.net.lobbyOpen = true;
-    netSend({ t: 'invite', to: b.dataset.inv, n: G.onlineMode || G.mode, goal: G.goal });
-  });
-  $('shareGame').onclick = () => {
-    const cfg = window.KOZEL_ONLINE || {};
-    const link = cfg.bot && cfg.app ? `https://t.me/${cfg.bot}/${cfg.app}` : location.origin;
-    if (TG && tgv('6.1')) TG.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent('Зіграймо в «Боярського козла»!'));
-    else if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => toast('Посилання скопійовано'), () => toast(link));
-  };
-  $('onlineBack').onclick = () => openMenu(true);
-}
 // Вас запросили: прийняти чи відхилити
 function showInvite(m) {
   const el = $('inviteBox');
   el.innerHTML = `<div class="pause-card" role="alertdialog" aria-label="Запрошення"><h2>Запрошення</h2>
-    <p class="who"><b>${esc(m.from.name)}</b> запрошує вас зіграти: ${esc(MODE_NAME[m.n] || '')}.</p>
+    <p class="who"><b>${esc(m.from.name)}</b> кличе вас грати в «Боярського козла».</p>
     ${G.started && !G.net.room ? '<p>Вашу партію з Дядею Славою буде збережено.</p>' : ''}
-    <div class="stack"><button class="btn primary" id="invYes">Грати</button><button class="btn" id="invNo">Не зараз</button></div></div>`;
+    <div class="stack"><button class="btn primary" id="invYes">Сісти за стіл</button><button class="btn" id="invNo">Не зараз</button></div></div>`;
   el.hidden = false; haptic.good(); Sfx.play('ach');
   clearTimeout(showInvite.tm); showInvite.tm = setTimeout(() => { if (!el.hidden) { el.hidden = true; netSend({ t: 'inviteReply', to: m.from.id, ok: false }); } }, 60000);
   $('invYes').onclick = () => {
@@ -2302,14 +2292,20 @@ function showInvite(m) {
   };
   $('invNo').onclick = () => { el.hidden = true; clearTimeout(showInvite.tm); netSend({ t: 'inviteReply', to: m.from.id, ok: false }); };
 }
+// Однакові сповіщення «вийшов / повернувся» — не частіше разу на 2 хвилини
+function notifyOnce(key) {
+  const now = Date.now(); notifyOnce.seen = notifyOnce.seen || {};
+  if (now - (notifyOnce.seen[key] || 0) < 120000) return false;
+  notifyOnce.seen[key] = now; return true;
+}
 // Господар закриває стіл для всіх (друге натискання — підтвердження)
 function confirmClose(b) {
   if (!b.dataset.sure) {
-    b.dataset.sure = '1'; b.textContent = 'Точно закрити? Натисніть ще раз';
-    setTimeout(() => { if (b.isConnected && b.dataset.sure) { delete b.dataset.sure; b.textContent = 'Завершити гру й закрити стіл'; } }, 4000);
+    const t = b.textContent; b.dataset.sure = '1'; b.textContent = 'Точно завершити для всіх? Натисніть ще раз';
+    setTimeout(() => { if (b.isConnected && b.dataset.sure) { delete b.dataset.sure; b.textContent = t; } }, 4000);
     return;
   }
-  haptic.act(); G.net.lobbyOpen = false; netSend({ t: 'close' });
+  haptic.act(); G.net.lobbyOpen = false; toast('Гру завершено'); netSend({ t: 'end', code: b.dataset.code || (G.net.room && G.net.room.code) || (G.net.lastRoom && G.net.lastRoom.code) });
 }
 
 G.prompt = 'Оберіть гру в меню.';
