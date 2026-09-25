@@ -128,8 +128,8 @@ const LEVELS = {
   easy: { mc: 0, noise: 6 },
   medium: { mc: 60, noise: 3 },
   hard: { mc: 400, noise: 2, timeMs: 700 },
-  // «Дядя Слава»: сильний плюс — у 2,5 раза більше варіантів розкладу на кожен хід
-  slava: { mc: 1000, noise: 2, timeMs: 1600 },
+  // «Дядя Слава» — єдиний рівень у грі. Турнір ботів показав, що більше часу на роздуми сили не додає, тож думає до 0,8 с
+  slava: { mc: 400, noise: 2, timeMs: 800 },
 };
 
 function chooseAction(s, level, rng) {

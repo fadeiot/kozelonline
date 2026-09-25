@@ -26,6 +26,7 @@ const APP_NAME = process.env.APP_NAME || '';
 const ALLOW_GUESTS = !BOT_TOKEN || process.env.ALLOW_GUESTS === '1';
 const PUBLIC_URL = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/$/, '');
 const KEEP_AWAKE = process.env.KEEP_AWAKE ? process.env.KEEP_AWAKE !== '0' : !!process.env.RENDER_EXTERNAL_URL;
+const NOTIFY = process.env.NOTIFY === '1'; // увімкнути нагадування бота знову: NOTIFY=1
 const WEBHOOK_SECRET = crypto.createHash('sha256').update('kozel-hook:' + BOT_TOKEN).digest('hex').slice(0, 32);
 
 // Час на повернення: до 45 с — нічого не зупиняємо; до 3 хв — пауза; далі за гравця грає бот, доки не повернеться
@@ -60,6 +61,7 @@ if (BOT_TOKEN) {
 // Сповіщення в особисті повідомлення бота (не частіше разу на хвилину для кожного гравця)
 const lastNotify = new Map();
 function notify(uid, text, code, force) {
+  if (!NOTIFY) return; // нагадування в Telegram вимкнено на прохання гравців
   if (!BOT_TOKEN || !uid || !uid.startsWith('tg')) return;
   const now = Date.now();
   if (!force && now - (lastNotify.get(uid) || 0) < 60000) return;
@@ -255,7 +257,7 @@ const rooms = new Map();
 const userRoom = new Map();
 const userLast = new Map();
 const sockets = new Map();
-const BOT_NAMES = ['Кум', 'Сват', 'Брат', 'Дядько'];
+const BOT_NAMES = ['Дядя Слава', 'Кум', 'Сват', 'Брат'];
 function newCode() {
   for (;;) {
     const c = String(1000 + Math.floor(Math.random() * 9000));
@@ -270,7 +272,7 @@ const humans = room => room.seats.filter(x => x && x.type === 'human');
 
 function createRoom(user, n, level, goal) {
   const room = {
-    code: newCode(), n, level: AI.LEVELS[level] ? level : 'medium', goal: goal === 6 ? 6 : 12, hostId: user.id,
+    code: newCode(), n, level: 'slava', goal: goal === 6 ? 6 : 12, hostId: user.id,
     seats: new Array(n).fill(null), status: 'lobby', ser: null, deal: null,
     ev: null, evSeq: 0, result: null, rec: null, reveal: null, ready: new Set(), timer: null, turnTimer: null, emptySince: null,
     chat: [], chatSeq: 0, duo: new Set(), absSig: '',
@@ -374,7 +376,7 @@ function viewFor(room, id) {
     if (trumpInStock) stock[stock.length - 1] = d.trumpCard;
     const t = d.table;
     v.deal = {
-      n, trump: d.trump, trumpCard: d.trumpCard, stock, phase: d.phase, attacker: rot(d.attacker),
+      n, trump: d.trump, trumpCard: d.trumpCard, stock, phase: d.phase, attacker: rot(d.attacker), combo3: d.combo3 ? rotArr(d.combo3) : null,
       hands: d.hands.map((_, r) => r === 0 ? d.hands[s].slice() : new Array(d.hands[unrot(r)].length).fill(-1)),
       piles: d.hands.map(() => []),
       table: t && {
@@ -437,7 +439,7 @@ function canDuo(room) {
 function send(ws, msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
 function broadcast(room) {
   for (const x of humans(room)) if (x.connected) send(sockets.get(x.id), viewFor(room, x.id));
-  dirty();
+  dirty(); presenceSoon();
 }
 
 // ---------- Хід гри ----------
@@ -529,7 +531,7 @@ function planTurn(room) {
       if (d.phase === 'dealEnd') endDeal(room);
       schedule(room, true); broadcast(room);
       if (room.status !== 'playing') maybeContinue(room);
-    }, 1500);
+    }, 1200);
     return;
   }
   if (d.phase === 'dealEnd') return;
@@ -589,7 +591,13 @@ function handle(ws, user, m) {
       checkAbsence(r); broadcast(r); sendChatHistory(r, user.id); schedule(r); maybeContinue(r);
       return;
     }
-    case 'leave': { leaveRoom(user.id); send(ws, { t: 'left', lastRoom: lastRoomFor(user.id) }); return; }
+    case 'leave': { leaveRoom(user.id); send(ws, { t: 'left', lastRoom: lastRoomFor(user.id) }); presenceSoon(); return; }
+    case 'ping': return send(ws, { t: 'pong', ts: m.ts });
+    case 'invite': return invite(ws, user, m);
+    case 'inviteReply': {
+      if (!m.ok && typeof m.to === 'string') send(sockets.get(m.to), { t: 'inviteDeclined', name: user.name });
+      return;
+    }
     case 'stats': {
       send(ws, { t: 'stats', me: stats[user.id] || Stats.blank(user.name), board: leaderboard(user.id) });
       return;
@@ -619,15 +627,23 @@ function handle(ws, user, m) {
     case 'goal':
       if (isHost && room.status === 'lobby' && (m.goal === 6 || m.goal === 12)) { room.goal = m.goal; broadcast(room); }
       return;
-    case 'level':
-      if (isHost && room.status === 'lobby' && AI.LEVELS[m.level]) {
+    case 'level': // рівень ботів один — «Дядя Слава»
+      if (false) {
         room.level = m.level; for (const x of room.seats) if (x && x.type === 'bot') x.level = m.level; broadcast(room);
       }
       return;
     case 'start':
       if (isHost && room.status === 'lobby' && room.seats.every(Boolean)) startSeries(room);
       return;
+    case 'close': { // господар завершує гру достроково й закриває стіл для всіх
+      if (!isHost) return send(ws, { t: 'error', msg: 'Закрити стіл може лише той, хто його створив.' });
+      closeRoom(room, user.name);
+      return;
+    }
     case 'act': {
+      // повторна відправка того самого ходу після обриву зв'язку — не помилка, просто надсилаємо поточний стан
+      if (m.id && lastActId.get(user.id) === m.id) return send(ws, viewFor(room, user.id));
+      if (m.id) lastActId.set(user.id, m.id);
       if (room.status === 'playing' && isPaused(room)) return send(ws, { t: 'error', msg: 'Гру зупинено: чекаємо, поки гравець повернеться.' });
       if (room.status !== 'playing' || E.toAct(room.deal) !== s) return send(ws, { t: 'error', msg: 'Зараз не ваш хід.' });
       const a = m.a || {};
@@ -726,6 +742,62 @@ async function onWebhook(req, res) {
 }
 
 // ---------- З'єднання ----------
+// ---------- Хто зараз у грі, запрошення, закриття столу ----------
+const lastActId = new Map();
+const lastInvite = new Map();
+function statusOf(id) {
+  const room = rooms.get(userRoom.get(id));
+  if (!room) return 'free';
+  return room.status === 'lobby' ? 'lobby' : 'playing';
+}
+function presenceList() {
+  const out = [];
+  for (const [id, ws] of sockets) if (ws.readyState === 1 && ws.user) out.push({ id, name: ws.user.name, ava: id.startsWith('tg') ? '/avatar/' + id.slice(2) : null, status: statusOf(id) });
+  return out.sort((a, b) => (a.status === 'free' ? 0 : 1) - (b.status === 'free' ? 0 : 1) || a.name.localeCompare(b.name));
+}
+let presenceTimer = null, presenceSig = '';
+function presenceSoon() {
+  if (presenceTimer) return;
+  presenceTimer = setTimeout(() => {
+    presenceTimer = null;
+    const list = presenceList(), sig = JSON.stringify(list);
+    if (sig === presenceSig) return;
+    presenceSig = sig;
+    for (const [id, ws] of sockets) send(ws, { t: 'presence', list: list.map(u => u.id === id ? { ...u, me: true } : u) });
+  }, 700);
+}
+function invite(ws, user, m) {
+  const now = Date.now();
+  if (now - (lastInvite.get(user.id) || 0) < 2000) return send(ws, { t: 'error', msg: 'Зачекайте трохи перед наступним запрошенням.' });
+  lastInvite.set(user.id, now);
+  const to = typeof m.to === 'string' ? m.to : '';
+  const tws = sockets.get(to);
+  if (!tws || to === user.id) return send(ws, { t: 'error', msg: 'Гравець уже вийшов з гри.' });
+  if (statusOf(to) !== 'free') return send(ws, { t: 'error', msg: 'Гравець зараз грає за іншим столом.' });
+  let room = rooms.get(userRoom.get(user.id));
+  if (room && room.status !== 'lobby') return send(ws, { t: 'error', msg: 'Спершу завершіть поточну гру.' });
+  if (room && !room.seats.some(x => x === null)) return send(ws, { t: 'error', msg: 'За вашим столом немає вільних місць.' });
+  if (!room) {
+    leaveRoom(user.id);
+    room = createRoom(user, [2, 3, 4].includes(m.n) ? m.n : 2, 'slava', m.goal);
+    broadcast(room); sendChatHistory(room, user.id);
+  }
+  send(tws, { t: 'invited', code: room.code, n: room.n, from: { id: user.id, name: user.name } });
+  send(ws, { t: 'inviteSent', name: tws.user ? tws.user.name : '' });
+  presenceSoon();
+}
+function closeRoom(room, byName) {
+  clearTimeout(room.timer); clearTimeout(room.turnTimer);
+  for (const x of humans(room)) {
+    if (userRoom.get(x.id) === room.code) userRoom.delete(x.id);
+    if (userLast.get(x.id) === room.code) userLast.delete(x.id);
+    const xs = sockets.get(x.id);
+    send(xs, { t: 'closed', code: room.code, by: byName });
+    send(xs, { t: 'left', lastRoom: null });
+  }
+  rooms.delete(room.code); dirty(); presenceSoon();
+}
+
 const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 1024 * 1024 });
 wss.on('connection', ws => {
   let user = null;
@@ -742,8 +814,9 @@ wss.on('connection', ws => {
       if (!user) { send(ws, { t: 'error', msg: 'Відкрийте гру через Telegram.' }); ws.close(); return; }
       const old = sockets.get(user.id);
       if (old && old !== ws) old.close();
-      sockets.set(user.id, ws);
+      sockets.set(user.id, ws); ws.user = user;
       if (stats[user.id]) stats[user.id].name = user.name;
+      presenceSoon();
       send(ws, { t: 'welcome', me: user, lastRoom: userRoom.has(user.id) ? null : lastRoomFor(user.id) });
       const code = userRoom.get(user.id), room = code && rooms.get(code);
       if (room) {
@@ -758,11 +831,15 @@ wss.on('connection', ws => {
       }
       return;
     }
+    ws.isAlive = true; // будь-яке повідомлення = з'єднання живе
+    const t0 = Date.now();
     try { handle(ws, user, m); } catch (e) { console.error(e); send(ws, { t: 'error', msg: 'Помилка сервера.' }); }
+    const dt = Date.now() - t0;
+    if (dt > 150) console.log(`повільно: ${m.t} ${dt} мс`);
   });
   ws.on('close', () => {
     if (!user || sockets.get(user.id) !== ws) return;
-    sockets.delete(user.id);
+    sockets.delete(user.id); presenceSoon();
     const code = userRoom.get(user.id), room = code && rooms.get(code);
     if (!room) return;
     const s = seatOf(room, user.id);
@@ -839,9 +916,12 @@ setInterval(() => {
     if (checkAbsence(room)) { broadcast(room); schedule(room); maybeContinue(room); }
   }
 }, 1500);
-// Перевірка зв'язку та прибирання покинутих столів і картинок
+// Перевірка «мертвих» з'єднань кожні 10 с (мобільний інтернет рветься без попередження)
 setInterval(() => {
   for (const ws of wss.clients) { if (!ws.isAlive) { ws.terminate(); continue; } ws.isAlive = false; ws.ping(); }
+}, 10000);
+// Прибирання покинутих столів і картинок
+setInterval(() => {
   const now = Date.now();
   for (const [code, room] of rooms) {
     if (room.emptySince && now - room.emptySince > EMPTY_TTL) {
@@ -852,6 +932,7 @@ setInterval(() => {
   }
   for (const [id, x] of shares) if (now - x.ts > 86400000) shares.delete(id);
   for (const [id, t] of lastChatAt) if (now - t > 3600000) lastChatAt.delete(id);
+  for (const id of lastActId.keys()) if (!sockets.has(id)) lastActId.delete(id);
 }, 25000);
 
 // Безкоштовний Render «засинає» після 15 хв без запитів — стукаємо самі до себе раз на 10 хв

@@ -56,6 +56,13 @@ function isUniform(cards) {
   return cards.every(c => suitOf(c) === s) || cards.every(c => rankOf(c) === r);
 }
 function isCombo(hand) { return hand.length === 4 && isUniform(hand); }
+// «Хід без черги»: 4 однакові карти (масть чи номінал). Особливий випадок: колода скінчилася на останньому доборі
+// і гравцю дісталося лише 3 карти — тоді 3 однакові теж дають право перехопити (2 — ні).
+function comboOf(s, p) {
+  const h = s.hands[p];
+  if (h.length === 4) return isUniform(h);
+  return h.length === 3 && !!(s.combo3 && s.combo3[p]) && isUniform(h);
+}
 function subsets(arr) {
   const out = [], n = arr.length;
   for (let m = 1; m < (1 << n); m++) {
@@ -99,6 +106,7 @@ function newDeal(rng, n, firstDeal, starter) {
     known: Array.from({ length: n }, () => new Map()),     // карта -> власник (у чужій руці), відомо гравцю p
     knownHidden: Array.from({ length: n }, () => new Set()), // закриті карти, які p знає
     trumpChanges,
+    combo3: new Array(n).fill(false), // хто лишився з 3 картами після останнього добору
   };
 }
 
@@ -119,7 +127,7 @@ function cloneState(s) {
     attacker: s.attacker, phase: s.phase, table: cloneTable(s.table),
     lastTrick: s.lastTrick, trumpHolder: s.trumpHolder,
     known: s.known.map(m => new Map(m)), knownHidden: s.knownHidden.map(x => new Set(x)),
-    trumpChanges: s.trumpChanges,
+    trumpChanges: s.trumpChanges, combo3: s.combo3 ? s.combo3.slice() : null,
   };
 }
 
@@ -134,7 +142,7 @@ function toAct(s) {
 function canIntercept(s) {
   if (s.n !== 2 || s.phase !== 'defend' || s.table.intercepted || s.table.attackerWasCombo) return false;
   if (s.table.layers.length) return false;
-  return isCombo(s.hands[toAct(s)]);
+  return comboOf(s, toAct(s));
 }
 
 function legalActions(s) {
@@ -176,13 +184,13 @@ function applyAction(s, a) {
   if (a.type === 'attack') {
     if (s.phase !== 'attack') throw new Error('Зараз не атака');
     if (!a.cards.length || !isUniform(a.cards)) throw new Error('Неприпустимий хід');
-    const wasCombo = isCombo(s.hands[p]);
-    removeCards(s.hands[p], a.cards);
+    const wasCombo = comboOf(s, p);
+    removeCards(s.hands[p], a.cards); if (s.combo3) s.combo3[p] = false;
     forgetPlayed(s, a.cards);
     s.table = { attack: a.cards.slice(), by: p, top: a.cards.slice(), topBy: null, layers: [],
       queue: [], interceptQueue: [], intercepted: false, attackerWasCombo: wasCombo };
     if (s.n > 2 && !wasCombo) {
-      const elig = defendersFrom(s.n, p).filter(q => isCombo(s.hands[q]));
+      const elig = defendersFrom(s.n, p).filter(q => comboOf(s, q));
       if (elig.length) { s.table.interceptQueue = elig; s.phase = 'intercept'; return; }
     }
     startDefense(s);
@@ -197,10 +205,10 @@ function applyAction(s, a) {
   if (a.type === 'intercept') {
     if (!(s.phase === 'intercept' || canIntercept(s))) throw new Error('Перехоплення неможливе');
     const t = s.table, back = t.attack;
-    s.hands[t.by].push(...back);
+    s.hands[t.by].push(...back); if (s.combo3) s.combo3[t.by] = false;
     for (let q = 0; q < s.n; q++) if (q !== t.by) for (const c of back) s.known[q].set(c, t.by);
     const combo = s.hands[p].slice();
-    s.hands[p] = [];
+    s.hands[p] = []; if (s.combo3) s.combo3[p] = false;
     forgetPlayed(s, combo);
     s.table = { attack: combo, by: p, top: combo.slice(), topBy: null, layers: [],
       queue: [], interceptQueue: [], intercepted: true, attackerWasCombo: true, returned: back.slice(), returnedTo: t.by };
@@ -214,12 +222,12 @@ function applyAction(s, a) {
   if (a.type === 'cover') {
     const m = matchCover(t.top, a.cards, s.trump);
     if (!m) throw new Error('Цими картами не побити');
-    removeCards(s.hands[p], a.cards);
+    removeCards(s.hands[p], a.cards); if (s.combo3) s.combo3[p] = false;
     forgetPlayed(s, a.cards);
     t.layers.push({ p, type: 'cover', cards: m });
     t.top = m; t.topBy = p;
   } else if (a.type === 'discard') {
-    removeCards(s.hands[p], a.cards);
+    removeCards(s.hands[p], a.cards); if (s.combo3) s.combo3[p] = false;
     for (let q = 0; q < s.n; q++) for (const c of a.cards)
       if (s.known[q].has(c)) { s.known[q].delete(c); s.knownHidden[q].add(c); }
     t.layers.push({ p, type: 'discard', cards: a.cards.slice() });
@@ -239,6 +247,7 @@ function finishTrick(s) {
   s.table = null; s.lastTrick = w; s.attacker = w;
   // добір: першим той, хто взяв взятку, далі за годинниковою стрілкою
   let q = w;
+  const hadStock = s.stock.length > 0;
   while (s.stock.length && s.hands.some(h => h.length < 4)) {
     if (s.hands[q].length < 4) {
       const c = s.stock.shift();
@@ -247,6 +256,8 @@ function finishTrick(s) {
     }
     q = (q + 1) % s.n;
   }
+  // колода скінчилася саме на цьому доборі: хто лишився з 3 картами, отримує право на «хід без черги» трьома
+  if (hadStock && !s.stock.length) s.combo3 = s.hands.map(h => h.length === 3);
   s.phase = (!s.stock.length && s.hands.every(h => !h.length)) ? 'dealEnd' : 'attack';
   return w;
 }
@@ -282,7 +293,8 @@ function newSeries(n, goal) {
 }
 function applyDealToSeries(ser, res, lastTrick) {
   ser.dealNo++;
-  ser.nextStarter = lastTrick;
+  // наступну роздачу починає гравець, що сидить після того, хто взяв останню взятку (за годинниковою стрілкою)
+  ser.nextStarter = lastTrick === null || lastTrick === undefined ? null : (lastTrick + 1) % ser.n;
   const rec = { pts: res.pts, eggs: res.eggs, mult: ser.mult, pens: res.pens.slice(), bases: res.bases };
   ser.deals.push(rec);
   if (res.eggs) { ser.mult *= 2; return rec; }
@@ -311,7 +323,7 @@ function unpackState(o) {
 
 const Engine = {
   SUIT_SYM, SUIT_NAME, RANK_LABEL, PTS, suitOf, rankOf, ptsOf, cardLabel,
-  mulberry32, shuffle, beats, canCover, matchCover, isUniform, isCombo, subsets, subsetsOfSize,
+  mulberry32, shuffle, beats, canCover, matchCover, isUniform, isCombo, comboOf, subsets, subsetsOfSize,
   defendersFrom, teamOf, teamCount, newDeal, cloneState, toAct, legalActions, canIntercept, applyAction, trickWinner,
   finishTrick, pilePoints, penaltyFor, dealResult, newSeries, applyDealToSeries, packState, unpackState,
 };
