@@ -10,7 +10,7 @@ const levels = [a, b];
 let pens = [0, 0], pts = [0, 0], dealsWon = [0, 0];
 const t0 = Date.now();
 for (let i = 0; i < N; i++) {
-  const seed = 1000 + i;
+  const seed = 1000 + i + (+process.env.OFF || 0);
   for (const swap of [false, true]) {
     const rng = E.mulberry32(seed);
     const s = E.newDeal(rng, 2, true, 0);

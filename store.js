@@ -5,8 +5,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const URL_ = (process.env.UPSTASH_REDIS_REST_URL || '').replace(/\/$/, '');
-const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
+// адресу можна вставити як «https://xxx.upstash.io» або просто «xxx.upstash.io» — https:// додамо самі
+const URL_ = (() => { const u = (process.env.UPSTASH_REDIS_REST_URL || '').trim().replace(/\/$/, ''); return u && !/^https?:\/\//.test(u) ? 'https://' + u : u; })();
+const TOKEN = (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
 const PREFIX = process.env.STORE_PREFIX || 'kozel:';
 const FILE = path.join(__dirname, 'data', 'store.json');
 
