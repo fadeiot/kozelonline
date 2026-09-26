@@ -54,10 +54,16 @@ button{font:inherit;color:inherit}
 .top{display:flex;align-items:center;gap:10px}
 .brand{font-family:var(--serif);font-weight:800;font-size:1.15rem;letter-spacing:.01em;flex:1;line-height:1}
 .brand small{display:block;font-family:var(--sans);font-weight:400;font-size:.72rem;color:var(--ink-muted);margin-top:3px;letter-spacing:0}
-.score{display:flex;gap:6px;align-items:stretch}
-.sc{display:flex;flex-direction:column;align-items:center;min-width:44px;padding:4px 8px;border:1px solid var(--line);border-radius:8px}
-.sc span{font-size:.68rem;color:var(--ink-muted)}
-.sc b{font-family:var(--serif);font-size:1.2rem;line-height:1.1}
+.score{display:flex;gap:6px;align-items:stretch;background:none;border:0;padding:0;color:inherit;cursor:pointer;font:inherit}
+.score:focus-visible{outline:3px solid var(--brass);outline-offset:2px;border-radius:10px}
+.sc{width:48px;height:56px;flex:none;display:grid;grid-template-rows:14px 1fr 6px;justify-items:center;align-items:center;padding:5px 5px 6px;border:1px solid var(--line);border-radius:9px;background:rgba(0,0,0,.14)}
+.sc span{font:600 .62rem/14px var(--sans);letter-spacing:.06em;color:var(--ink-muted);white-space:nowrap;overflow:hidden;max-width:100%}
+.sc b{font:800 1.25rem/1 var(--serif);font-variant-numeric:tabular-nums}
+.sc>i{display:block;width:100%;height:3px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden;align-self:end}
+.sc>i>i{display:block;height:100%;background:var(--brass)}
+.sc.me{border-color:rgba(212,167,58,.55)}
+.sc.warn b{color:#e0786d}
+.sc.warn>i>i{background:var(--red)}
 .mult{align-self:center;background:var(--brass);color:var(--brass-ink);font-weight:600;border-radius:6px;padding:3px 7px;font-size:.85rem}
 .icon{background:none;border:1px solid var(--line);border-radius:8px;width:38px;height:38px;font-size:1.1rem;cursor:pointer}
 
@@ -439,11 +445,25 @@ details.rulesbox summary{cursor:pointer;font-family:var(--serif);font-weight:800
 .gseat.empty{padding:4px 10px;border-style:dashed;background:transparent;color:var(--ink-muted)}
 .gbtns{display:flex;gap:8px}
 .gbtns .btn{min-height:44px}
+.gbtns.col{flex-direction:column}
 .gbtns:empty{display:none}
 .row.small .btn{min-height:40px;font-size:.86rem}
 .muted{color:var(--ink-muted);font-size:.88rem}
 .seatrow .who{min-width:0;overflow:hidden}
 .seatrow .who>i{font-style:normal;margin-left:8px;color:var(--ink-muted);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scoretab{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.st-row{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px}
+.st-row.me{border-color:rgba(212,167,58,.55)}
+.st-name b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-name small{display:block;color:var(--ink-muted);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
+.st-bar i{display:block;height:100%;background:var(--brass)}
+.st-row.warn .st-bar i{background:var(--red)}
+.st-num{text-align:right;min-width:44px}
+.st-num b{display:block;font:800 1.4rem/1 var(--serif);font-variant-numeric:tabular-nums}
+.st-num small{color:var(--ink-muted);font-size:.72rem}
+.st-row.warn .st-num b{color:#e0786d}
+.seat4 .nm4{white-space:nowrap;max-width:88px;overflow:hidden;text-overflow:ellipsis;text-align:center}
 </style>
 </head>
 <body>
@@ -464,7 +484,7 @@ details.rulesbox summary{cursor:pointer;font-family:var(--serif);font-weight:800
 <path d="M22 80 L26 84 L24 88" fill="none" stroke="#2e241a" stroke-width="1.5" stroke-linecap="round"/>
 <path d="M80 92 L88 90 L90 95 L82 97 Z" fill="#d9ccb3" stroke="#2e241a" stroke-width="1.4" stroke-linejoin="round"/>
 </svg><small id="levelLbl" class="sr-only"></small></div>
-    <div class="score" id="score" aria-label="Очки"></div>
+    <button class="score" id="score" aria-label="Рахунок"></button>
     <div class="mult" id="mult" hidden>×2</div>
     <button class="icon" id="chatBtn" aria-label="Чат" hidden>💬<span class="badge" id="chatBadge" hidden></span></button>
     <button class="icon" id="musicBtn" aria-label="Фонова музика" aria-pressed="true">♫</button>
@@ -582,12 +602,19 @@ function renderCore() {
   const s = G.deal, ser = G.ser, n = n_();
   const sc = $('score'); sc.innerHTML = '';
   document.body.classList.toggle('crowded', !!G.net.room && n === 3);
-  const chipNames = n === 4 ? ['Ми', 'Вони'] : [...Array(n).keys()].map(i => { const t = nm(i); return t.length > 7 ? t.slice(0, 6) + '…' : t; });
-  chipNames.forEach((t, i) => {
-    const d = document.createElement('div'); d.className = 'sc' + (n === 4 ? (i === 0 ? ' us' : ' them') : '');
-    d.innerHTML = `<span>${esc(t)}</span><b>${ser ? ser.penalties[i] : 0}</b>`;
+  // Рахунок: однакові плитки — коротка мітка (ВИ, ДС, КУМ), штрафні великою цифрою, смужка «до козла»
+  const goal = ser ? ser.goal : G.goal || 12;
+  const labels = n === 4 ? ['МИ', 'ВОНИ'] : [...Array(n).keys()].map(i => mono(nm(i)));
+  const full = n === 4 ? ['Наша пара', 'Суперники'] : [...Array(n).keys()].map(i => nm(i));
+  labels.forEach((t, i) => {
+    const pen = ser ? ser.penalties[i] : 0, pct = Math.min(100, Math.round(100 * pen / goal));
+    const d = document.createElement('div');
+    d.className = 'sc' + (i === 0 ? ' me' : '') + (n === 4 ? (i === 0 ? ' us' : ' them') : '') + (pen >= goal - 3 && pen > 0 ? ' warn' : '');
+    d.title = `${full[i]}: ${pen} з ${goal}`;
+    d.innerHTML = `<span>${esc(t)}</span><b>${pen}</b><i><i style="width:${pct}%"></i></i>`;
     sc.appendChild(d);
   });
+  sc.setAttribute('aria-label', 'Рахунок: ' + labels.map((t, i) => `${full[i]} ${ser ? ser.penalties[i] : 0}`).join(', ') + ` з ${goal}`);
   $('mult').hidden = !ser || ser.mult === 1;
   $('mult').textContent = '×' + (ser ? ser.mult : 1);
   $('levelLbl').textContent = G.net.room ? `${MODE_NAME[n]}, стіл ${G.net.room.code}` : MODE_NAME[n] + ', гра з Дядею Славою';
@@ -1429,7 +1456,16 @@ function showHall() {
     h += `<div class="gcard${mine ? ' mine' : ''}"><div class="gtitle"><b>${MODE_NAME[g.n]}</b><span>до ${g.goal} штрафних · ${free > 0 ? 'чекаємо ще ' + free : 'починаємо'}</span></div><div class="gseats">`;
     for (let i = 0; i < g.n; i++) h += chip(g.seats[i], !g.seats[i]);
     h += `</div><div class="gbtns">`;
-    if (mine) h += `<button class="btn" data-fill="1">Решта — Дядя Слава</button><button class="btn" data-stand="1">Встати</button>`;
+    if (mine) {
+      const hs = g.seats.filter(x => !x.bot);
+      if (g.n === 4 && hs.length === 2) h += `</div><div class="menu-lbl">Решту місць займе Дядя Слава. Як сідаємо?</div><div class="gbtns col">` +
+        `<button class="btn" data-fill="together">${esc(hs[0].name)} і ${esc(hs[1].name)} — пара проти ботів</button>` +
+        `<button class="btn" data-fill="apart">Одне проти одного, у кожного бот-партнер</button>`;
+      else if (g.n === 4 && hs.length === 3) h += `</div><div class="menu-lbl">Хто грає в парі з Дядею Славою?</div><div class="gbtns col">` +
+        hs.map(x => `<button class="btn" data-fill="${esc(x.id)}">${esc(x.name)}</button>`).join('');
+      else h += `<button class="btn" data-fill="1">Решта — Дядя Слава</button>`;
+      h += `<button class="btn" data-stand="1">Встати</button>`;
+    }
     else if (!inGame) h += `<button class="btn primary" data-join="${g.code}">Сісти</button>`;
     h += `</div></div>`;
   }
@@ -1457,7 +1493,7 @@ function showHall() {
   document.querySelectorAll('[data-join]').forEach(b => b.onclick = () => { b.disabled = true; netSend({ t: 'join', code: b.dataset.join }); });
   document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => { b.disabled = true; netSend({ t: 'open', n: +b.dataset.open, goal: G.goal }); });
   document.querySelectorAll('[data-hgl]').forEach(b => b.onclick = () => { G.goal = +b.dataset.hgl; try { localStorage.setItem('kozel-goal', G.goal); } catch (e) {} showHall(); });
-  document.querySelectorAll('[data-fill]').forEach(b => b.onclick = () => { b.disabled = true; netSend({ t: 'fill' }); });
+  document.querySelectorAll('[data-fill]').forEach(b => b.onclick = () => { b.disabled = true; netSend({ t: 'fill', pair: b.dataset.fill }); });
   document.querySelectorAll('[data-stand]').forEach(b => b.onclick = () => netSend({ t: 'leave' }));
   document.querySelectorAll('[data-inv]').forEach(b => b.onclick = () => { b.disabled = true; b.textContent = 'Покликали'; netSend({ t: 'invite', to: b.dataset.inv }); });
   $('hallLink').onclick = () => {
@@ -1593,6 +1629,33 @@ function resumeTable() {
   closeSheet();
 }
 $('menuBtn').onclick = () => openMenu(true);
+$('score').onclick = () => openScore();
+// Коротка мітка для плитки рахунку: «ВИ», «ДС», «КУМ», «СВАТ», «АЛЕ»
+function mono(name) {
+  name = String(name || '').trim();
+  if (!name) return '·';
+  if (name === 'Ви') return 'ВИ';
+  const w = name.split(/\s+/);
+  if (w.length > 1) return (w[0][0] + w[1][0]).toUpperCase();
+  return (name.length <= 4 ? name : name.slice(0, 3)).toUpperCase();
+}
+// Повний рахунок: імена, штрафні й скільки лишилось до козла
+function openScore() {
+  const ser = G.ser;
+  if (!ser || !G.deal && !G.net.room) return;
+  const n = ser.n, goal = ser.goal;
+  const rows = n === 4 ? [['Наша пара', `${nm(0)} і ${nm(2)}`, 0], ['Суперники', `${nm(1)} і ${nm(3)}`, 1]]
+    : [...Array(n).keys()].map(i => [nm(i), '', i]);
+  let h = `<h2>Рахунок</h2><p>Гра до ${goal} штрафних · роздача ${ser.dealNo + 1}${ser.mult > 1 ? ` · штрафи ×${ser.mult} за яйця` : ''}</p><div class="scoretab">`;
+  for (const [name, sub, i] of rows) {
+    const pen = ser.penalties[i], pct = Math.min(100, Math.round(100 * pen / goal));
+    h += `<div class="st-row${i === 0 ? ' me' : ''}${pen >= goal - 3 && pen > 0 ? ' warn' : ''}"><div class="st-name"><b>${esc(name)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</div>` +
+      `<div class="st-bar"><i style="width:${pct}%"></i></div><div class="st-num"><b>${pen}</b><small>ще ${Math.max(0, goal - pen)}</small></div></div>`;
+  }
+  h += `</div><p class="muted">Штрафні: менше 60 очок у роздачі — 1, до 30 — 2, жодного — 4. Хто набере ${goal}, той козел.</p><div class="stack"><button class="btn primary" id="scoreOk">До гри</button></div>`;
+  openSheet(h, 'score');
+  $('scoreOk').onclick = () => { if (G.dealEndOpen && G.lastDealEnd) G.lastDealEnd(); else closeSheet(); };
+}
 // ---------- Таймери: загальний час гри і 1 хвилина на хід ----------
 const TURN_MS = 60000;
 function turnRemainMs() {

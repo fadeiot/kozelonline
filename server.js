@@ -453,6 +453,18 @@ function broadcast(room) {
 }
 
 // ---------- Хід гри ----------
+// Пара на пару з ботами: хто з ким у парі. Партнери сидять навпроти (місця 0 і 2, 1 і 3).
+//   pair = 'together' — двоє людей у парі проти ботів; 'apart' — у кожного бот-партнер;
+//   pair = id гравця — з ним у парі Дядя Слава (коли людей троє).
+function arrangePairs(room, pair) {
+  const hs = room.seats.filter(x => x.type === 'human'), bs = room.seats.filter(x => x.type === 'bot');
+  if (hs.length === 2 && bs.length === 2) {
+    room.seats = pair === 'apart' ? [hs[0], hs[1], bs[0], bs[1]] : [hs[0], bs[0], hs[1], bs[1]];
+  } else if (hs.length === 3 && bs.length === 1) {
+    const p = hs.find(x => x.id === pair) || hs[0], rest = hs.filter(x => x !== p);
+    room.seats = [p, rest[0], bs[0], rest[1]];
+  }
+}
 function autoStart(room) {
   if (room.status === 'lobby' && room.seats.length >= (room.target || 99) && room.seats.length >= 2) startSeries(room);
 }
@@ -646,6 +658,7 @@ function handle(ws, user, m) {
     case 'fill': // решту місць займають боти — і починаємо
       if (isHost && room.status === 'lobby') {
         while (room.seats.length < (room.target || 2)) room.seats.push({ type: 'bot', level: room.level, name: botName(room) });
+        if (room.seats.length === 4) arrangePairs(room, m.pair);
         room.n = room.seats.length; autoStart(room);
       }
       return;
