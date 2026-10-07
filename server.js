@@ -257,7 +257,7 @@ const rooms = new Map();
 const userRoom = new Map();
 const userLast = new Map();
 const sockets = new Map();
-const BOT_NAMES = ['Дядя Слава', 'Кум', 'Сват', 'Брат'];
+const BOT_NAMES = ['Робот', 'Кум', 'Сват', 'Брат'];
 function newCode() {
   for (;;) {
     const c = String(1000 + Math.floor(Math.random() * 9000));
@@ -280,7 +280,7 @@ function createRoom(user, goal, target) {
     ev: null, evSeq: 0, result: null, rec: null, reveal: null, ready: new Set(), timer: null, turnTimer: null, emptySince: null,
     chat: [], chatSeq: 0, duo: new Set(), absSig: '',
   };
-  room.seats.push({ type: 'human', id: user.id, name: user.name, connected: true });
+  room.seats.push(withPos(room, { type: 'human', id: user.id, name: user.name, connected: true }, 0));
   rooms.set(room.code, room); userRoom.set(user.id, room.code); userLast.set(user.id, room.code);
   return room;
 }
@@ -295,7 +295,7 @@ function absence(x, now) {
 function markAway(x, now) { x.connected = false; x.awaySince = x.awaySince || now || Date.now(); }
 function markBack(x) { x.connected = true; x.awaySince = null; x.left = false; }
 
-function joinRoom(user, code) {
+function joinRoom(user, code, pos) {
   const room = rooms.get(code);
   if (!room) return 'Стіл не знайдено. Перевірте код.';
   const cur = seatOf(room, user.id);
@@ -309,7 +309,7 @@ function joinRoom(user, code) {
   if (room.status !== 'lobby') return 'Цю гру вже почали. Дочекайтеся кінця партії.';
   if (room.seats.length >= (room.target || 4)) return 'Усі місця в цій грі вже зайняті.';
   leaveRoom(user.id);
-  room.seats.push({ type: 'human', id: user.id, name: user.name, connected: true });
+  room.seats.push(withPos(room, { type: 'human', id: user.id, name: user.name, connected: true }, pos));
   room.n = room.seats.length;
   userRoom.set(user.id, code); userLast.set(user.id, code);
   return room;
@@ -455,7 +455,7 @@ function broadcast(room) {
 // ---------- Хід гри ----------
 // Пара на пару з ботами: хто з ким у парі. Партнери сидять навпроти (місця 0 і 2, 1 і 3).
 //   pair = 'together' — двоє людей у парі проти ботів; 'apart' — у кожного бот-партнер;
-//   pair = id гравця — з ним у парі Дядя Слава (коли людей троє).
+//   pair = id гравця — з ним у парі Робот (коли людей троє).
 function arrangePairs(room, pair) {
   const hs = room.seats.filter(x => x.type === 'human'), bs = room.seats.filter(x => x.type === 'bot');
   if (hs.length === 2 && bs.length === 2) {
@@ -468,7 +468,19 @@ function arrangePairs(room, pair) {
 function autoStart(room) {
   if (room.status === 'lobby' && room.seats.length >= (room.target || 99) && room.seats.length >= 2) startSeries(room);
 }
+// Учотирьох кожен сидить на своєму місці 0–3: партнери навпроти (0 і 2, 1 і 3)
+function freePos(room) { const used = new Set(room.seats.map(x => x.pos)); return [0, 1, 2, 3].filter(p => !used.has(p)); }
+function withPos(room, seat, want) {
+  if (room.target !== 4) return seat;
+  const free = freePos(room);
+  seat.pos = free.includes(want) ? want : free[0];
+  return seat;
+}
+function seatOrder(room) {
+  if (room.seats.length === 4 && room.seats.every(x => Number.isInteger(x.pos))) room.seats.sort((a, b) => a.pos - b.pos);
+}
 function startSeries(room) {
+  seatOrder(room);
   room.n = room.seats.length;
   room.startedAt = Date.now();
   room.ser = E.newSeries(room.n, room.goal); room.result = null; room.rec = null;
@@ -618,7 +630,7 @@ function handle(ws, user, m) {
       return;
     }
     case 'join': {
-      const r = joinRoom(user, String(m.code || '').replace(/\D/g, '').slice(0, 4));
+      const r = joinRoom(user, String(m.code || '').replace(/\D/g, '').slice(0, 4), m.pos);
       if (typeof r === 'string') return send(ws, { t: 'error', msg: r });
       checkAbsence(r); broadcast(r); sendChatHistory(r, user.id); schedule(r); maybeContinue(r);
       autoStart(r);
@@ -650,15 +662,18 @@ function handle(ws, user, m) {
   if (!room) return send(ws, { t: 'error', msg: 'Ви не за столом.' });
   const s = seatOf(room, user.id), isHost = s >= 0; // усі, хто за столом, мають рівні права
   switch (m.t) {
-    case 'bot': // посадити Дядю Славу (чи іншого бота) на вільне місце
+    case 'bot': // посадити робота на вільне місце (учотирьох — на обране)
       if (isHost && room.status === 'lobby' && room.seats.length < (room.target || 4)) {
-        room.seats.push({ type: 'bot', level: room.level, name: botName(room) }); room.n = room.seats.length; broadcast(room); autoStart(room);
+        room.seats.push(withPos(room, { type: 'bot', level: room.level, name: botName(room) }, m.pos)); room.n = room.seats.length; broadcast(room); autoStart(room);
       }
+      return;
+    case 'move': // пересісти на інше вільне місце за столом учотирьох (до початку гри)
+      if (s >= 0 && room.status === 'lobby' && room.target === 4 && freePos(room).includes(m.pos)) { room.seats[s].pos = m.pos; broadcast(room); }
       return;
     case 'fill': // решту місць займають боти — і починаємо
       if (isHost && room.status === 'lobby') {
-        while (room.seats.length < (room.target || 2)) room.seats.push({ type: 'bot', level: room.level, name: botName(room) });
-        if (room.seats.length === 4) arrangePairs(room, m.pair);
+        while (room.seats.length < (room.target || 2)) room.seats.push(withPos(room, { type: 'bot', level: room.level, name: botName(room) }));
+        if (room.seats.length === 4 && !room.seats.every(x => Number.isInteger(x.pos))) arrangePairs(room, m.pair);
         room.n = room.seats.length; autoStart(room);
       }
       return;
@@ -670,7 +685,7 @@ function handle(ws, user, m) {
     case 'goal':
       if (isHost && room.status === 'lobby' && (m.goal === 6 || m.goal === 12)) { room.goal = m.goal; broadcast(room); }
       return;
-    case 'level': // рівень ботів один — «Дядя Слава»
+    case 'level': // рівень ботів один — «Робот»
       if (false) {
         room.level = m.level; for (const x of room.seats) if (x && x.type === 'bot') x.level = m.level; broadcast(room);
       }
@@ -799,7 +814,7 @@ function gamesList() {
   for (const r of rooms.values()) {
     if (!humans(r).length) continue;
     out.push({ code: r.code, n: r.status === 'lobby' ? (r.target || 2) : r.n, goal: r.goal, open: r.status === 'lobby',
-      seats: r.seats.map(x => ({ name: x.name, bot: x.type === 'bot', id: x.type === 'human' ? x.id : null, ava: avatarOf(x) })) });
+      seats: r.seats.map(x => ({ name: x.name, bot: x.type === 'bot', id: x.type === 'human' ? x.id : null, ava: avatarOf(x), pos: x.pos })) });
   }
   return out.sort((a, b) => (b.open - a.open) || a.code.localeCompare(b.code));
 }
