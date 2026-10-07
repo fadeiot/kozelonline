@@ -581,18 +581,18 @@ header.top .mult{background:linear-gradient(180deg,var(--brass-hi),var(--brass))
 .psit:disabled,.plink:disabled{opacity:.5}
 /* ===== Стіл А1: суперники в один ряд угорі, усе сукно під карти, пари кольорами ===== */
 .board4{position:relative;display:block;padding:0;min-height:300px}
-.board4 .center4{position:absolute;left:10px;top:10px;width:122px;height:116px;padding:5px;margin:0}
+.board4 .center4{position:absolute;left:10px;top:10px;width:130px;height:116px;padding:5px;margin:0}
 .board4 .center4 .card{--w:54px}
 .board4 .center4 .deck{left:5px;top:5px}
-.board4 .center4 .trumpcard{left:42px;top:5px}
+.board4 .center4 .trumpcard{left:61px;top:5px}
 .board4 .center4 .lbl{top:auto;bottom:5px;left:7px;font-size:.6rem;line-height:1.2}
 .board4 .center4 .lbl b{font-size:.68rem}
 .board4 .center4 .lbl .sym{font-size:.85rem}
 .board4 .center4 .suitonly{left:23px;top:8px;width:66px;height:66px;font-size:2.2rem}
-.board4 .seat4{position:absolute;top:12px;width:78px;margin:0;transform:translateX(-50%);gap:2px}
+.board4 .seat4{position:absolute;top:12px;width:72px;margin:0;transform:translateX(-50%);gap:2px}
 .board4 .seat4.top{margin:0}
 .board4 .seat4 .ava{width:46px;height:46px;font-size:1.15rem}
-.board4 .seat4 .nm4{font-size:.7rem;max-width:78px}
+.board4 .seat4 .nm4{font-size:.7rem;max-width:72px}
 .board4 .seat4 .chip{font-size:.6rem;padding:1px 6px}
 .board4 .seat4 .chip.hide{display:none}
 .board4 .seat4 .tl{position:absolute;top:-6px;left:calc(50% + 22px);font-size:.64rem;white-space:nowrap;padding:1px 5px;border-radius:7px;background:rgba(0,0,0,.45)}
@@ -606,6 +606,7 @@ header.top .mult{background:linear-gradient(180deg,var(--brass-hi),var(--brass))
 .board4 .seat4.tu .ava,.board4 .seat4.tt .ava{box-shadow:0 0 0 3.5px var(--tc),0 6px 12px rgba(0,0,0,.5)}
 .board4 .seat4.tu.active .ava,.board4 .seat4.tt.active .ava{box-shadow:0 0 0 3.5px var(--tc),0 0 0 7px var(--brass-hi),0 0 18px rgba(243,220,147,.6)}
 .board4 .seat4 .tpill{white-space:nowrap;font:700 .56rem/1.35 var(--sans);letter-spacing:.09em;text-transform:uppercase;padding:2px 7px;border-radius:7px;color:#14100c;background:var(--tc)}
+@media (max-width:385px){.board4 .seat4 .tpill .tpx{display:none}}
 .prow.tu,.prow.tt{border-left:4px solid transparent;padding-left:5px}
 .prow.tu{border-left-color:var(--us);background:linear-gradient(90deg,rgba(134,184,109,.16),transparent 70%)}
 .prow.tt{border-left-color:var(--them);background:linear-gradient(90deg,rgba(216,112,90,.16),transparent 70%)}
@@ -872,7 +873,7 @@ function renderBoard(s, actor) {
       (p > 0 && isMate(p) ? ' mate' : '') + (p > 0 && actor === p ? ' active' : '') + (n === 4 && p > 0 ? (isMate(p) ? ' tu' : ' tt') : '');
     // усі суперники в один ряд угорі (зліва направо за ходом гри), праворуч від колоди
     const row = pos.filter(x => x.at !== 'B').map(x => x.at), ri = row.indexOf(at);
-    seat.style.left = ri < 0 ? '' : `calc(136px + (100% - 142px) * ${(ri + 0.5) / row.length})`;
+    seat.style.left = ri < 0 ? '' : `calc(144px + (100% - 150px) * ${(ri + 0.5) / row.length})`;
     if (p < 0) { seat.innerHTML = ''; continue; }
     const chip = G.chips[p];
     const nmp = esc(nm(p)), letter = LETTER[nm(p)] || esc((nm(p)[0] || '?').toUpperCase());
@@ -880,7 +881,7 @@ function renderBoard(s, actor) {
     const ch = off ? (G.net.room.auto && G.net.room.auto[p] ? '🤖 грає бот' : 'нема зв’язку') : chip;
     seat.innerHTML = `<div class="ava" aria-label="${nmp}">${letter}${avaImg(p)}<span class="cnt4">${s.hands[p].length}</span></div>` +
       `<div class="nm4">${nmp.length > 12 ? nmp.slice(0, 11) + '…' : nmp}</div>` +
-      (n === 4 ? `<span class="tpill">${isMate(p) ? 'ми · партнер' : 'вони'}</span>` : '') + `<div class="chip${ch === 'взятка' ? ' win' : ''}${ch ? '' : ' hide'}">${ch || '·'}</div>`;
+      (n === 4 ? `<span class="tpill">${isMate(p) ? 'ми<span class="tpx"> · партнер</span>' : 'вони'}</span>` : '') + `<div class="chip${ch === 'взятка' ? ' win' : ''}${ch ? '' : ' hide'}">${ch || '·'}</div>`;
     if (actor === p && turnRemainMs() !== null) { seat.classList.add('timed'); seat.insertAdjacentHTML('beforeend', '<div class="tl" data-tl></div>'); }
     const bb = Chat.bubbles[p];
     if (bb && bb.until > Date.now()) seat.insertAdjacentHTML('beforeend', `<div class="bubble">${esc(bb.text)}</div>`);
