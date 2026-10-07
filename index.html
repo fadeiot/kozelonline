@@ -519,15 +519,22 @@ header.top .mult{background:linear-gradient(180deg,var(--brass-hi),var(--brass))
 /* купка на столі: шари сходинками в бік того, хто походив; верхній — з латунною рамкою */
 .cross{display:grid;grid-template:1fr/1fr;place-items:center;position:relative;min-height:0}
 .cross.wide{grid-column:1/4}
-.pile{position:relative;flex:none}
-.pile .card.pc{position:absolute;--w:var(--pw,64px);margin:0}
+.pile{position:relative;flex:none;display:flex;flex-direction:column;align-items:center;gap:8px}
+.prow{display:flex;align-items:center;gap:6px;padding:3px 6px 3px 3px;border-radius:12px}
+.prow.last{background:rgba(243,220,147,.10);box-shadow:inset 0 0 0 1px rgba(243,220,147,.35)}
+.prow .ptagw{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:700 .66rem var(--sans);color:var(--tink);
+  background:radial-gradient(circle at 35% 30%,#6b4a32,#2a1a10);box-shadow:0 0 0 2px rgba(243,220,147,.35)}
+.prow .ptagw.us{box-shadow:0 0 0 2px var(--us)}.prow .ptagw.them{box-shadow:0 0 0 2px var(--them)}
+.prow.last .ptagw{box-shadow:0 0 0 2px var(--brass-hi),0 0 10px rgba(243,220,147,.5)}
+.pile .card.pc{position:relative;--w:var(--pw,64px);margin:0}
 .pile .card.pc .idx{font-size:calc(var(--w)*.29)}
 .pile .card.pc.top{box-shadow:0 0 0 2.5px var(--brass-hi),0 0 18px rgba(243,220,147,.55),0 8px 16px rgba(0,0,0,.45)}
 .pile .card.pc.back{opacity:.95}
+.pile .card.pc.back{rotate:0deg}
 .pile .card.prev{opacity:.92;box-shadow:0 0 0 2.5px rgba(134,184,109,.95),0 6px 12px rgba(0,0,0,.4)}
 .pile .card.prev.nobeat{box-shadow:0 0 0 2.5px var(--red),0 6px 12px rgba(0,0,0,.4);opacity:.75}
 .pile .card.prev.plain{box-shadow:0 6px 12px rgba(0,0,0,.4)}
-.pile .pslot{position:absolute;width:var(--pw);height:calc(var(--pw)*1.4);border-radius:calc(var(--pw)*.1);border:1.8px dashed rgba(134,184,109,.9);background:rgba(134,184,109,.1)}
+.pile .pslot{position:relative;flex:none;width:var(--pw);height:calc(var(--pw)*1.4);border-radius:calc(var(--pw)*.1);border:1.8px dashed rgba(134,184,109,.9);background:rgba(134,184,109,.1)}
 
 /* шкіряна полиця з рукою, таймером і кнопками */
 .rail{position:relative;flex:none;display:flex;flex-direction:column;gap:8px;margin:0 -12px -12px;
@@ -851,80 +858,52 @@ function renderBoard(s, actor) {
 }
 
 const LAST_ICON = `<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="7" y="9" width="17" height="23" rx="3" transform="rotate(-12 15 20)" fill="#6b1f2a" stroke="#f3e8d2" stroke-width="2"/><rect x="15" y="7" width="17" height="23" rx="3" transform="rotate(8 23 18)" fill="#6b1f2a" stroke="#f3e8d2" stroke-width="2"/><path d="M27 34 a7 7 0 1 0 -6 -9" fill="none" stroke="#f3dc93" stroke-width="2.6" stroke-linecap="round"/><path d="M18 22 l3 4 l4 -3" fill="none" stroke="#f3dc93" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>взятка</span>`;
-// ---------- Купка на столі: кожен наступний хід лягає сходинкою в бік того, хто походив ----------
-// Попередні карти лишаються видними, а верхня (з рамкою) — це остання рука.
-const DIR = { B: [0, 1], T: [0, -1], L: [-1, 0], R: [1, 0] };
+// ---------- Карти на столі: кожен хід — окремий рядок, нічого не накладається ----------
+// Вгорі атака, під нею відповіді по черзі; кожна карта стоїть точно під тією, яку б'є.
+// Ліворуч від рядка — літера гравця, останній хід — з латунною рамкою.
 function renderPile(s, actor) {
   const box = $('pile'); box.innerHTML = '';
-  const t = s.table, n = s.n, pos = POS[n];
+  const t = s.table, n = s.n;
   $('cross').className = 'cross' + (n === 2 ? ' wide' : '');
   if (!t) return;
-  // шари: атака, потім кожна відповідь; мій вибір на захисті — пунктирні «тіні» поверх
-  const layers = [{ p: t.by, cards: t.attack.map(c => ({ c, back: false })) }];
-  for (const l of t.layers) layers.push({ p: l.p, cards: l.cards.map(c => ({ c, back: l.type === 'discard' })) });
-  const preview = t && s.phase === 'defend' && actor === 0 && !G.busy && !G.net.sent && G.sel.size
+  const rows = [{ p: t.by, cards: t.attack.map(c => ({ c, back: false })) }];
+  for (const l of t.layers) rows.push({ p: l.p, cards: l.cards.map(c => ({ c, back: l.type === 'discard' })) });
+  const preview = s.phase === 'defend' && actor === 0 && !G.busy && !G.net.sent && G.sel.size
     ? pairSel(t.top, [...G.sel], s.trump) : null;
-  if (preview) layers.push({ p: 0, preview: true, cards: preview.map(x => x ? { c: x.c, ok: x.ok } : null) });
-  const k = t.attack.length;
-  // зсуви кожного шару (у частках ширини/висоти карти)
-  // кожен шар зсувається від попереднього в бік свого гравця; якщо там уже лежить карта — ще на крок далі
-  let ox = 0, oy = 0;
-  const used = new Set();
-  // багато карт (3–4) — стовпчики зсуваються майже лише вниз/вгору, щоб їх можна було злегка насунути один на одний
-  const compact = k >= 3;
-  const DIRC = { B: [0, 1], T: [0, -1], L: [-.25, 1], R: [.25, 1] };
-  const offs = layers.map((l, i) => {
-    // компактно: сходинки строго вниз за порядком ходів, нахил убік показує, хто клав
-    if (compact) return [i ? DIRC[pos[l.p].at][0] * .48 : 0, i * .30];
-    if (i > 0) {
-      const d = DIR[pos[l.p].at];
-      do { ox += d[0] * .42; oy += d[1] * .32; } while (used.has(ox.toFixed(2) + ',' + oy.toFixed(2)));
-    }
-    used.add(ox.toFixed(2) + ',' + oy.toFixed(2));
-    return [ox, oy];
-  });
-  const minX = Math.min(...offs.map(o => o[0])), maxX = Math.max(...offs.map(o => o[0]));
-  const minY = Math.min(...offs.map(o => o[1])), maxY = Math.max(...offs.map(o => o[1]));
-  // розмір карти: якомога більший, але щоб уся купка влізла на сукно
+  if (preview) rows.push({ p: 0, preview: true, cards: preview.map(x => x ? { c: x.c, ok: x.ok } : null) });
+  const k = t.attack.length, R = rows.length;
+  // розмір карти: найбільший, за якого всі рядки влазять на сукно
   const cr = $('cross').getBoundingClientRect();
-  const W = Math.max(150, cr.width - 8), H = Math.max(120, cr.height - 8);
-  const colW = w => w * (1 + maxX - minX), colH = w => w * 1.4 * (1 + maxY - minY);
-  // коли карт багато, стовпчики трохи заходять один на одний (ліва частина з номіналом лишається видною)
-  const gapFor = w => k < 2 ? 0 : Math.max(-0.42 * w, Math.min(8, (W - k * colW(w)) / (k - 1)));
-  let w = 80;
-  while (w > 34 && (k * colW(w) + (k - 1) * gapFor(w) > W || colH(w) > H)) w -= 2;
-  const gap = gapFor(w);
+  const tagW = 26, gap = 6, rgap = 8;
+  const W = Math.max(140, cr.width - 6), H = Math.max(120, cr.height - 6);
+  const w = Math.max(34, Math.min(80, Math.floor((W - tagW - gap - (k - 1) * gap) / k), Math.floor((H - (R - 1) * rgap) / (R * 1.4))));
   box.style.setProperty('--pw', w + 'px');
-  box.style.width = (k * colW(w) + (k - 1) * gap) + 'px';
-  box.style.height = colH(w) + 'px';
+  box.style.width = box.style.height = '';
   const topOwner = t.topBy === null ? t.by : t.topBy;
-  const lastIdx = layers.length - 1 - (preview ? 1 : 0);
-  for (let i = 0; i < k; i++) {
-    const x0 = i * (colW(w) + gap) - minX * w, y0 = -minY * w * 1.4;
-    layers.forEach((l, li) => {
-      const e = l.cards[i];
-      if (l.preview && !e) {
-        const sl = document.createElement('div'); sl.className = 'pslot';
-        sl.style.left = (x0 + offs[li][0] * w) + 'px'; sl.style.top = (y0 + offs[li][1] * w * 1.4) + 'px';
-        box.appendChild(sl); return;
-      }
-      if (!e) return;
+  const lastRow = R - 1 - (preview ? 1 : 0);
+  rows.forEach((r, ri) => {
+    const row = document.createElement('div');
+    row.className = 'prow' + (ri === lastRow ? ' last' : '') + (r.preview ? ' prev' : '');
+    const who = r.p === 0 ? 'Ви' : nm(r.p);
+    const tag = document.createElement('span');
+    tag.className = 'ptagw' + (n === 4 ? (r.p % 2 === 0 ? ' us' : ' them') : (r.p === 0 ? ' us' : ''));
+    tag.textContent = r.p === 0 ? 'Ви' : (LETTER[who] || (who[0] || '?').toUpperCase());
+    tag.title = who;
+    row.appendChild(tag);
+    r.cards.forEach((e, i) => {
+      if (!e) { const sl = document.createElement('div'); sl.className = 'pslot'; row.appendChild(sl); return; }
       const el = cardEl(e.back ? null : e.c);
       el.classList.add('pc');
-      if (l.preview) el.classList.add('prev', !hintsOn() ? 'plain' : e.ok ? 'okp' : 'nobeat');
+      if (r.preview) el.classList.add('prev', !hintsOn() ? 'plain' : e.ok ? 'okp' : 'nobeat');
       else {
-        el.dataset.c = e.back && l.p !== 0 ? 'h' + l.p + '_' + li + '_' + i : 'c' + e.c;
-        el.dataset.o = l.p;
-        if (li === lastIdx && l.p === topOwner && s.phase !== 'resolve' && !e.back) el.classList.add('top');
-        if (li === lastIdx) el.classList.add('last');
+        el.dataset.c = e.back && r.p !== 0 ? 'h' + r.p + '_' + ri + '_' + i : 'c' + e.c;
+        el.dataset.o = r.p;
+        if (ri === lastRow && r.p === topOwner && s.phase !== 'resolve' && !e.back) el.classList.add('top');
       }
-      if (e.back) el.style.rotate = ((i % 2 ? 1 : -1) * 5) + 'deg';
-      el.style.left = (x0 + offs[li][0] * w) + 'px';
-      el.style.top = (y0 + offs[li][1] * w * 1.4) + 'px';
-      el.style.zIndex = li + 1;
-      box.appendChild(el);
+      row.appendChild(el);
     });
-  }
+    box.appendChild(row);
+  });
 }
 
 function renderActions(mine) {
