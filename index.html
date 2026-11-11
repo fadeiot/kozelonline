@@ -595,6 +595,60 @@ header.top .mult{background:linear-gradient(180deg,var(--brass-hi),var(--brass))
 .cross .card:not(.back) .idx.b{display:none}
 .cross .card:not(.back) .pip{inset:auto 7% 3% auto;display:block;font-size:calc(var(--w)*.5);line-height:1}
 
+/* ===== Шліфування зручності (update-9) ===== */
+/* кнопки ходу: активна — латунь, неактивна — чітко «вимкнена», а не напівпрозора */
+.rail .btn:disabled{opacity:1;background:rgba(0,0,0,.28);color:rgba(243,234,214,.42);box-shadow:inset 0 0 0 1.5px rgba(243,220,147,.16);text-shadow:none}
+.rail .btn.primary:disabled{background:rgba(0,0,0,.28);color:rgba(243,234,214,.42);box-shadow:inset 0 0 0 1.5px rgba(243,220,147,.16)}
+.rail .btn{font-size:1.02rem;min-height:52px;border-radius:12px}
+.rail .btn:not(:disabled):active{translate:0 2px;filter:brightness(.94)}
+.waitline{flex:1;min-height:52px;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--tmuted);font:500 .95rem var(--sans);text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.waitline.pre{color:var(--brass-hi)}
+.waitline i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.3;animation:wdot 1.2s infinite}
+.waitline i:first-of-type{margin-left:4px}.waitline i:nth-of-type(2){animation-delay:.2s}.waitline i:nth-of-type(3){animation-delay:.4s}
+@keyframes wdot{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.waitline i{animation:none}}
+.rail .turnbar{height:26px;border-radius:13px}
+.rail .turnbar i{top:auto;height:4px;opacity:1}
+.rail .lastbtn{font-size:.58rem;min-height:52px}
+.rail .turnbar span{font:600 .84rem/26px var(--sans)}
+/* підписи на столі — більші й контрастніші */
+.board4 .seat4 .nm4{font-size:.84rem;color:var(--tink)}
+.board4 .chip{font-size:.74rem;padding:3px 8px;background:rgba(0,0,0,.5);color:var(--tink)}
+.board4 .chip.win{background:var(--brass);color:#2b1d0e}
+.center4 .lbl{font-size:.74rem}
+.center4 .lbl b{font-size:.92rem}
+.board4 .clock{font-size:.8rem}
+.center4:empty{visibility:hidden}
+/* на двох і трьох на сукні багато місця — карти на столі більші, розкладка та сама */
+body[data-n="2"] .board4{--c4:min(17vw,66px)}
+body[data-n="3"] .board4{--c4:min(14vw,56px)}
+/* вибрана карта в руці */
+#myHand .card.sel{translate:0 -22px;box-shadow:0 0 0 3px var(--brass-hi),0 0 18px rgba(243,220,147,.55),0 12px 20px rgba(0,0,0,.4)}
+/* вікна меню: кнопки як на столі */
+.sheet-card{position:relative;padding-top:26px;box-shadow:0 -10px 30px rgba(0,0,0,.45)}
+.sheet-card::before{content:"";position:absolute;left:50%;top:9px;width:44px;height:4px;border-radius:2px;translate:-50% 0;background:var(--line)}
+.sheet .btn{border-radius:12px;box-shadow:0 2px 0 rgba(0,0,0,.16)}
+.sheet .btn.primary{background:linear-gradient(180deg,#ecd07a,#d4a73a 55%,#b98a2a);color:#2b1d0e;box-shadow:0 1px 0 rgba(255,255,255,.45) inset,0 3px 0 #8a6a1e}
+.sheet .btn:active{translate:0 2px}
+.sheet h2.win{color:#3d8a4e}.sheet h2.lose{color:#c0452f}
+.fmt{margin:10px 0 2px;padding:10px 12px 12px;border:1px solid var(--line);border-radius:14px}
+.fmt .menu-lbl{margin:0 0 8px}
+.fmt .row{margin-top:8px}
+.fmt .row .btn{min-height:42px;font-size:.88rem;padding:0 6px;box-shadow:none}
+.fmt .row .btn.primary{box-shadow:0 2px 0 #8a6a1e}
+.setrow.inl{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);margin-top:0}
+.setrow.inl:first-of-type{margin-top:14px}
+.setrow.inl .menu-lbl{margin:0;font-size:.95rem;color:var(--ink)}
+.tog{flex:none;width:54px;height:32px;border-radius:16px;border:0;padding:0;cursor:pointer;background:var(--btn);box-shadow:inset 0 0 0 1px var(--line);position:relative;transition:background .15s}
+.tog i{position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:translate .15s}
+.tog[aria-checked="true"]{background:#d4a73a;box-shadow:none}
+.tog[aria-checked="true"] i{translate:22px 0}
+.tog:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+/* розсадка вчотирьох: без накладань */
+.ptable{height:390px}
+.pfelt{width:100px;height:100px}
+.pseat.t{top:17%}.pseat.b{top:87%}.pseat.l{left:16%}.pseat.r{left:84%}
+
 </style>
 </head>
 <body>
@@ -753,7 +807,7 @@ function renderCore() {
   $('mult').textContent = '×' + (ser ? ser.mult : 1);
   $('levelLbl').textContent = G.net.room ? `${MODE_NAME[n]}, стіл ${G.net.room.code}` : MODE_NAME[n] + ', гра з роботом';
   $('msg').textContent = [G.pending, ...G.notes, G.prompt].filter(Boolean).join(' ');
-  document.body.classList.add('m4');
+  document.body.classList.add('m4'); document.body.dataset.n = n;
   $('board4').hidden = false;
   if (!s) {
     for (const id of ['seatT', 'seatL', 'seatR', 'playsT', 'playsL', 'playsR', 'playsB', 'center4', 'myHand', 'actions']) $(id).innerHTML = '';
@@ -940,7 +994,10 @@ function renderActions(mine) {
   if (!mine || s.phase === 'resolve' || s.phase === 'dealEnd') {
     const a = L.toAct(s);
     const pre = G.sel.size && s.phase !== 'resolve' && s.phase !== 'dealEnd';
-    mk(pre ? `Вибрано ${cardsWord(G.sel.size)} · чекаємо вашого ходу` : G.busy && a > 0 ? nm(a) + ' думає…' : 'Зачекайте', null, false); return;
+    const w = document.createElement('div'); w.className = 'waitline' + (pre ? ' pre' : '');
+    w.textContent = pre ? `Вибрано ${cardsWord(G.sel.size)} · зіграєте, коли дійде хід` : a > 0 ? `Ходить ${nm(a)}` : 'Зачекайте';
+    if (!pre) w.insertAdjacentHTML('beforeend', '<i></i><i></i><i></i>');
+    box.appendChild(w); return;
   }
   const sel = [...G.sel];
   if (!G.net.room && hintsOn() && !(s.phase === 'defend' && L.canIntercept(s))) { const hb = mk('💡', doHint, true); hb.classList.add('hint'); hb.setAttribute('aria-label', 'Підказка'); hb.title = 'Підказка'; }
@@ -1186,20 +1243,20 @@ function showDealEnd(res, rec, ser, reveal, trump) {
   const pen = k => k + ' ' + plural(k, 'штрафне очко', 'штрафні очки', 'штрафних очок');
   let h = '';
   if (n === 2) {
-    h += `<h2>${res.eggs ? 'Яйця!' : res.loser === 0 ? 'Роздачу програно' : 'Роздачу виграно'}</h2>`;
+    h += `<h2 class="${res.eggs ? '' : res.loser === 0 ? 'lose' : 'win'}">${res.eggs ? 'Яйця!' : res.loser === 0 ? 'Роздачу програно' : 'Роздачу виграно'}</h2>`;
     h += `<div class="big">${res.pts[0]}<span>ви : ${esc(nm(1))}</span>${res.pts[1]}</div>`;
     if (res.eggs) h += `<p>Рівно 60 на 60. Грається додаткова роздача, штрафи в ній для програвшого ×${ser.mult}.</p>`;
     else h += `<p>${res.loser === 0 ? 'Ви отримуєте' : esc(nm(1)) + ' отримує'} ${pen(res.penalty)} (${why(res.base)}${rec.mult > 1 ? ', ×' + rec.mult + ' за яйця' : ''}).</p>`;
     h += `<div class="tally"><div>Ваші очки<b>${ser.penalties[0]}</b></div><div>${esc(nm(1))}<b>${ser.penalties[1]}</b></div></div>`;
   } else if (n === 4) {
-    h += `<h2>${res.eggs ? 'Яйця!' : res.loser === 0 ? 'Роздачу програно' : 'Роздачу виграно'}</h2>`;
+    h += `<h2 class="${res.eggs ? '' : res.loser === 0 ? 'lose' : 'win'}">${res.eggs ? 'Яйця!' : res.loser === 0 ? 'Роздачу програно' : 'Роздачу виграно'}</h2>`;
     h += `<div class="big">${res.teamPts[0]}<span>ми : вони</span>${res.teamPts[1]}</div>`;
     h += `<p>Ви ${res.pts[0]}, ${esc(nm(2))} ${res.pts[2]}; ${esc(nm(1))} ${res.pts[1]}, ${esc(nm(3))} ${res.pts[3]}.</p>`;
     if (res.eggs) h += `<p>Рівно 60 на 60. Грається додаткова роздача, штрафи в ній для програвших ×${ser.mult}.</p>`;
     else h += `<p>${res.loser === 0 ? 'Наша команда отримує' : 'Команда суперників отримує'} ${pen(res.penalty)} (${why(res.base)}${rec.mult > 1 ? ', ×' + rec.mult + ' за яйця' : ''}).</p>`;
     h += `<div class="tally"><div>Наші очки<b>${ser.penalties[0]}</b></div><div>Їхні очки<b>${ser.penalties[1]}</b></div></div>`;
   } else {
-    h += `<h2>${res.pens[0] === 0 ? 'Роздачу виграно' : 'Роздачу програно'}</h2>`;
+    h += `<h2 class="${res.pens[0] === 0 ? 'win' : 'lose'}">${res.pens[0] === 0 ? 'Роздачу виграно' : 'Роздачу програно'}</h2>`;
     h += `<table class="res"><tr><th></th><th>Набрано</th><th>Штраф</th><th>Усього</th></tr>`;
     for (let i = 0; i < n; i++)
       h += `<tr><td>${esc(nm(i))}</td><td><b>${res.pts[i]}</b></td><td>${res.pens[i] ? '+' + res.pens[i] : '—'}</td><td>${ser.penalties[i]}</td></tr>`;
@@ -1781,8 +1838,8 @@ function openMenu(byUser) {
   h += `<div class="stack">`;
   if (offGame || saved) h += `<button class="btn btn-lg${R ? '' : ' primary'}" id="${offGame ? 'resumeOff' : 'loadBtn'}">Продовжити гру з роботом · ${(offGame ? G.ser : G.saved.ser).penalties.join(' : ')}</button>`;
   h += `<button class="btn btn-lg${R || offGame || saved ? '' : ' primary'}" id="startBtn">${offGame || saved ? 'Нова гра з роботом' : 'Гра з роботом'}</button>`;
-  h += `</div><details class="opts"><summary>${MODE_NAME[mode]} · до ${goal} штрафних</summary>` +
-    btns('md', [[2, 'На двох'], [3, 'На трьох'], [4, 'Пара на пару']], mode) + btns('gl', [[12, 'До 12'], [6, 'До 6']], goal) + `</details>`;
+  h += `</div><div class="fmt"><div class="menu-lbl">${offGame || saved ? 'Формат нової гри' : 'Формат гри'}</div>` +
+    btns('md', [[2, 'На двох'], [3, 'На трьох'], [4, 'Пара на пару']], mode) + btns('gl', [[12, 'До 12 штрафних'], [6, 'Коротка, до 6']], goal) + `</div>`;
   if (offGame || saved) h += `<button class="linkbtn danger" id="endOffline">${offGame ? 'Завершити гру з роботом' : 'Видалити збережену гру'}</button>`;
   // 3. Друзі
   if (online && !R) h += `<div class="stack"><button class="btn btn-lg" id="friendsBtn">Грати з друзями</button></div>`;
@@ -1875,14 +1932,20 @@ function tick() {
   const rtt = G.net.room && G.net.rtt != null ? ` · ${G.net.rtt < 150 ? '🟢' : G.net.rtt < 400 ? '🟡' : '🔴'} ${G.net.rtt} мс` : '';
   $('clock').textContent = start && G.deal ? '⏱ ' + fmtTime(now - start) + rtt : '';
   const rem = turnRemainMs(), actor = G.deal ? L.toAct(G.deal) : -1;
-  const bar = $('turnbar'), mine = rem !== null && actor === 0 && !G.net.sent;
+  const sd = G.deal;
+  const bar = $('turnbar'), mine = !!sd && actor === 0 && !G.net.sent && !G.busy && !G.undoSnap && ['attack', 'defend', 'intercept'].includes(sd.phase);
   bar.classList.toggle('on', mine);
   if (mine) {
-    const r = Math.max(0, rem);
-    bar.style.setProperty('--p', (100 * r / TURN_MS).toFixed(1) + '%');
-    bar.querySelector('span').textContent = 'Ваш хід: ' + Math.ceil(r / 1000) + ' с';
-    bar.classList.toggle('low', r <= 10000);
-    if (r <= 10000 && !G.warned) { G.warned = true; haptic.act(); }
+    const need = sd.phase === 'defend' && sd.table ? sd.table.top.length : 0, k = G.sel.size;
+    let tip = 'Ваш хід';
+    if (sd.phase === 'attack' && !k) tip = 'Ваш хід · виберіть карту';
+    else if (need && k < need) tip = need === 1 ? 'Ваш хід · виберіть карту' : k ? `Ваш хід · вибрано ${k} з ${need}` : `Ваш хід · виберіть ${cardsWord(need)}`;
+    else if (need && k > need) tip = `Забагато: потрібно ${cardsWord(need)}`;
+    const r = rem === null ? null : Math.max(0, rem);
+    bar.style.setProperty('--p', r === null ? '0%' : (100 * r / TURN_MS).toFixed(1) + '%');
+    bar.querySelector('span').textContent = tip + (r === null ? '' : ' · ' + Math.ceil(r / 1000) + ' с');
+    bar.classList.toggle('low', r !== null && r <= 10000);
+    if (r !== null && r <= 10000 && !G.warned) { G.warned = true; haptic.act(); }
   }
   document.querySelectorAll('[data-autoat]').forEach(el => { const ms = +el.dataset.autoat - now - (G.net.offset || 0); el.textContent = ms > 0 ? fmtTime(ms) : 'кілька секунд'; });
   document.querySelectorAll('.seat4.timed').forEach(el => {
@@ -2165,18 +2228,20 @@ function openStats(tab) {
 
 // ---------- Налаштування (екран) ----------
 function openSettings() {
-  const row = (lbl, key, opts) => `<div class="setrow"><div class="menu-lbl">${lbl}</div><div class="row${opts.length === 4 ? ' two' : ''}">` +
+  const tog = (lbl, on, attrs) => `<div class="setrow inl"><div class="menu-lbl">${lbl}</div><button class="tog" role="switch" aria-checked="${on}" aria-label="${lbl}" ${attrs}><i></i></button></div>`;
+  const row = (lbl, key, opts) => opts.length === 2 && opts[0][0] === true ? tog(lbl, G.set[key] !== false, `data-set="${key}" data-val="${G.set[key] === false}"`) :
+    `<div class="setrow"><div class="menu-lbl">${lbl}</div><div class="row${opts.length === 4 ? ' two' : ''}">` +
     opts.map(([v, t]) => `<button class="btn${G.set[key] === v ? ' primary' : ''}" data-set="${key}" data-val="${v}" aria-pressed="${G.set[key] === v}">${t}</button>`).join('') + `</div></div>`;
   const sw = c => `<span class="swatch" style="background:${c}"></span>`;
   let h = `<h2>Налаштування</h2>`;
   h += row('Швидкість карт', 'speed', [['slow', 'Повільно'], ['normal', 'Звичайно'], ['fast', 'Швидко']]);
-  h += row('Таймер на хід у грі з ботами', 'timer', [[true, 'Хвилина'], [false, 'Без таймера']]);
+  h += row('Таймер ходу в грі з роботом (хвилина)', 'timer', [[true, 'Хвилина'], [false, 'Без таймера']]);
   h += row('Сукно', 'table', [['wood', sw('#1d5a3d') + 'Зелене'], ['bordo', sw('#6a1d25') + 'Бордове'], ['blue', sw('#21416a') + 'Синє']]);
   h += row('Сорочка карт', 'back', [['bordo', sw('#6b1f2a') + 'Бордо'], ['blue', sw('#1f4a7a') + 'Синя'], ['green', sw('#2a6a45') + 'Зелена'], ['black', sw('#2b2724') + 'Чорна']]);
   h += row('Підказки під час гри', 'hints', [[true, 'Показувати'], [false, 'Без підказок']]);
-  h += row('Скасування ходу в грі з ботами', 'undo', [[true, 'Можна скасувати'], [false, 'Без скасування']]);
+  h += row('Можна скасувати свій хід (гра з роботом)', 'undo', [[true, 'Можна скасувати'], [false, 'Без скасування']]);
   h += row('Звуки', 'sfx', [[true, 'Увімкнено'], [false, 'Вимкнено']]);
-  h += `<div class="setrow"><div class="menu-lbl">Фонова музика</div><div class="row"><button class="btn${Music.on ? ' primary' : ''}" id="musOn">Увімкнено</button><button class="btn${Music.on ? '' : ' primary'}" id="musOff">Вимкнено</button></div></div>`;
+  h += tog('Фонова музика', Music.on, 'id="musTog"');
   if (TG && tgv('8.0')) {
     h += `<div class="setrow"><div class="menu-lbl">Telegram</div><div class="stack" style="margin-top:0">`;
     h += `<button class="btn" id="fsBtn">${TG.isFullscreen ? 'Вийти з повного екрана' : 'На весь екран'}</button>`;
@@ -2192,8 +2257,7 @@ function openSettings() {
     saveSet(); render(); openSettings();
     if (k === 'sfx' && G.set.sfx) Sfx.play('card');
   });
-  $('musOn').onclick = () => { if (!Music.on) Music.toggle(); openSettings(); };
-  $('musOff').onclick = () => { if (Music.on) Music.toggle(); openSettings(); };
+  $('musTog').onclick = () => { Music.toggle(); openSettings(); };
   if ($('fsBtn')) $('fsBtn').onclick = () => { try { TG.isFullscreen ? TG.exitFullscreen() : TG.requestFullscreen(); } catch (e) {} };
   if ($('homeBtn')) $('homeBtn').onclick = () => { try { TG.addToHomeScreen(); } catch (e) {} };
   $('setDone').onclick = () => openMenu(true);
