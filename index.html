@@ -595,6 +595,24 @@ header.top .mult{background:linear-gradient(180deg,var(--brass-hi),var(--brass))
 .cross .card:not(.back) .idx.b{display:none}
 .cross .card:not(.back) .pip{inset:auto 7% 3% auto;display:block;font-size:calc(var(--w)*.5);line-height:1}
 
+/* ===== Стіл: великими лише карти «бити зараз»; що вийшло з гри — плашкою біля гравця ===== */
+.cross.lg{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:0}
+.cross.lg.wide{grid-column:1/4}
+.cross.lg .plays{display:none}
+.lgcap{font:600 .72rem var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--tmuted);text-shadow:0 1px 2px #000}
+.lgcap.sm{text-transform:none;letter-spacing:0;font-size:.8rem}
+.lgrow{display:flex;gap:6px;justify-content:center}
+.lgrow .card,.lgrow .slot4 .card{--w:var(--bw)}
+.lgrow .slot4{width:var(--bw);height:calc(var(--bw)*1.4);border-radius:calc(var(--bw)*.1)}
+.lgrow.top .card{box-shadow:0 0 0 2.5px var(--brass-hi),0 0 16px rgba(243,220,147,.5),0 6px 12px rgba(0,0,0,.4)}
+.out{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;max-width:76px;padding:3px 4px;border-radius:8px;background:rgba(0,0,0,.55);box-shadow:0 0 0 1px rgba(243,220,147,.25)}
+.seat4.top .out{max-width:150px}
+.out b{font:800 .95rem/1.1 var(--serif);color:#f3ead6;white-space:nowrap}
+.out b.r{color:#ff8a78}
+.out.disc{font:600 .72rem var(--sans);color:var(--tmuted);background:rgba(0,0,0,.35);box-shadow:none}
+.myout{display:flex;align-items:center;gap:6px}.myout .out{max-width:none}
+.myout span{font:600 .72rem var(--sans);color:var(--tmuted)}
+
 </style>
 </head>
 <body>
@@ -881,43 +899,49 @@ function renderBoard(s, actor) {
 }
 
 const LAST_ICON = `<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="7" y="9" width="17" height="23" rx="3" transform="rotate(-12 15 20)" fill="#6b1f2a" stroke="#f3e8d2" stroke-width="2"/><rect x="15" y="7" width="17" height="23" rx="3" transform="rotate(8 23 18)" fill="#6b1f2a" stroke="#f3e8d2" stroke-width="2"/><path d="M27 34 a7 7 0 1 0 -6 -9" fill="none" stroke="#f3dc93" stroke-width="2.6" stroke-linecap="round"/><path d="M18 22 l3 4 l4 -3" fill="none" stroke="#f3dc93" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>взятка</span>`;
-// ---------- Карти на столі: зіграні карти лежать перед тим, хто їх поклав (як до 07.10) ----------
+// ---------- Карти на столі ----------
+// У центрі великими — лише карти, які треба бити зараз, і місця під вашу відповідь.
+// Відкриті карти, які вже перебили (вийшли з гри), — плашкою біля того, хто їх клав.
+// Скинуті закриті — лише «скинув N».
+function outChip(cards, disc) {
+  if (disc) return `<div class="out disc">скинув ${cards.length}</div>`;
+  return `<div class="out">` + cards.map(c => { const su = L.suitOf(c); return `<b class="${su >= 2 ? 'r' : ''}">${L.RANK_LABEL[L.rankOf(c)]}${L.SUIT_SYM[su]}</b>`; }).join('') + `</div>`;
+}
 function renderPile(s, actor) {
-  const n = s.n, pos = POS[n];
-  const byP = Array.from({ length: n }, () => []);
-  const t = s.table;
-  if (t) {
-    byP[t.by] = t.attack.map(c => ({ c, back: false }));
-    for (const l of t.layers) byP[l.p] = l.cards.map(c => ({ c, back: l.type === 'discard' }));
+  const cr = $('cross'), n = s.n, pos = POS[n], t = s.table;
+  cr.className = 'cross lg' + (n === 2 ? ' wide' : '');
+  cr.querySelectorAll('.lgx').forEach(e => e.remove());
+  if (!t) return;
+  const items = [{ p: t.by, cards: t.attack, disc: false }].concat(t.layers.map(l => ({ p: l.p, cards: l.cards, disc: l.type === 'discard' })));
+  let ti = 0; items.forEach((it, i) => { if (!it.disc) ti = i; });
+  const per = {};
+  items.forEach((it, i) => { if (i !== ti) (per[it.p] = per[it.p] || []).push(it); });
+  for (const p in per) {
+    const html = per[p].map(it => outChip(it.cards, it.disc)).join('');
+    if (+p === 0) cr.insertAdjacentHTML('beforeend', `<div class="lgx myout"><span>Ви:</span>${html}</div>`);
+    else { const at = pos[p] && pos[p].at, seat = at && $('seat' + at); if (seat) seat.insertAdjacentHTML('beforeend', html); }
   }
-  const topOwner = t ? (t.topBy === null ? t.by : t.topBy) : -1;
-  const lastP = t ? (t.layers.length ? t.layers[t.layers.length - 1].p : t.by) : -1;
-  const cls = { B: 'p0', L: 'p1', T: 'p2', R: 'p3' };
-  for (const at of ['T', 'L', 'R', 'B']) {
-    const box = $('plays' + at); box.innerHTML = '';
-    const p = pos.findIndex(x => x.at === at);
-    box.className = 'plays ' + cls[at];
-    if (p < 0) continue;
-    if (p === topOwner && s.phase !== 'resolve') box.classList.add('top');
-    if (p === lastP && G.fly < 0) box.classList.add('new');
-    // мій захист: пунктирні місця під кожну карту, яку треба побити; вибрані карти лягають на «свою»
-    if (p === 0 && t && s.phase === 'defend' && actor === 0 && !G.busy && !G.net.sent) {
-      pairSel(t.top, [...G.sel], s.trump).forEach(x => {
-        const sl = document.createElement('div'); sl.className = 'slot4';
-        if (x) sl.appendChild(cardEl(x.c, { cls: !hintsOn() ? 'plain' : x.ok ? '' : 'nobeat' }));
-        box.appendChild(sl);
-      });
-      continue;
-    }
-    byP[p].forEach((e, i) => {
-      const el = cardEl(e.back ? null : e.c);
-      // свої скинуті карти знаємо; чужі закриті не мають ідентифікатора в DOM
-      el.dataset.c = e.back && p !== 0 ? 'h' + p + '_' + i : 'c' + e.c;
-      el.dataset.o = p;
-      box.appendChild(el);
+  const top = items[ti], k = t.attack.length;
+  const mine = s.phase === 'defend' && actor === 0 && !G.busy && !G.net.sent;
+  const R = cr.getBoundingClientRect();
+  const H = R.height - (per[0] ? 36 : 0) - (mine ? 52 : 26);
+  const bw = Math.max(40, Math.min(72, Math.floor((R.width - 4 - (k - 1) * 6) / k), Math.floor(H / ((mine ? 2 : 1) * 1.4))));
+  cr.style.setProperty('--bw', bw + 'px');
+  const who = top.p === 0 ? 'ви' : nm(top.p);
+  cr.insertAdjacentHTML('beforeend', `<div class="lgx lgcap">${t.topBy === null ? 'Зайшов' : 'Побив'} ${esc(who)}</div>`);
+  const row = document.createElement('div'); row.className = 'lgx lgrow' + (s.phase !== 'resolve' ? ' top' : '');
+  top.cards.forEach(c => { const el = cardEl(c); el.dataset.c = 'c' + c; el.dataset.o = top.p; row.appendChild(el); });
+  cr.appendChild(row);
+  if (mine) {
+    cr.insertAdjacentHTML('beforeend', `<div class="lgx lgcap sm">Ваш хід · вибрано ${G.sel.size} з ${t.top.length}</div>`);
+    const pr = document.createElement('div'); pr.className = 'lgx lgrow';
+    pairSel(t.top, [...G.sel], s.trump).forEach(x => {
+      const sl = document.createElement('div'); sl.className = 'slot4';
+      if (x) sl.appendChild(cardEl(x.c, { cls: !hintsOn() ? 'plain' : x.ok ? '' : 'nobeat' }));
+      pr.appendChild(sl);
     });
+    cr.appendChild(pr);
   }
-  $('cross').className = 'cross';
 }
 
 function renderActions(mine) {
@@ -1026,7 +1050,7 @@ function collectTo(w) {
   const target = w === 0 ? $('myHand') : seatAva(w);
   if (!target) return;
   const [tx, ty] = centerOf(target.getBoundingClientRect());
-  document.querySelectorAll('.plays .card').forEach((el, i) => {
+  document.querySelectorAll('#cross .card, .seat4 .out, #cross .out').forEach((el, i) => {
     const [cx, cy] = centerOf(el.getBoundingClientRect());
     el.animate([
       { transform: 'none', opacity: 1 },
